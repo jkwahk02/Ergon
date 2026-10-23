@@ -61,22 +61,48 @@ h2{margin:0;font-weight:500;font-size:15px}
 .wcard button[type=submit]{min-height:46px;border:none;background:var(--fg);color:var(--bg);font-size:15px;font-weight:500}
 .wcard button[type=submit]:disabled{opacity:.6;cursor:default}
 .wcard .alt{font-size:13px;color:var(--muted)}
-/* home: the carousel of live showrooms */
-.deck{position:relative;height:clamp(440px,58vw,600px);margin-top:28px;overflow:hidden}
-.card{position:absolute;top:0;bottom:0;left:50%;width:min(1120px,80vw);margin-left:calc(min(1120px,80vw) / -2);display:flex;flex-wrap:wrap;color:#FFFFFF;transition:transform 600ms cubic-bezier(.2,.7,.2,1),filter 600ms ease;overflow:hidden}
+/* home: the carousel of live showrooms. The centre card is in front; its neighbours sit dimmed behind it,
+   and the strip of each that shows in the side gutter carries a compact label. Hovering a gutter moves the deck. */
+.deck{--W:min(1040px,72vw);position:relative;height:clamp(440px,52vw,580px);margin-top:28px;overflow:hidden;touch-action:pan-y;outline:none}
+.card{position:absolute;top:0;bottom:0;left:50%;width:var(--W);margin-left:calc(var(--W) / -2);display:flex;flex-wrap:wrap;color:#FFFFFF;overflow:hidden;
+  transition:transform 750ms cubic-bezier(.22,.8,.2,1),filter 600ms ease,opacity 600ms ease;will-change:transform}
+.card.c0{z-index:3;transform:none;filter:none}
+.card.cl,.card.cr{z-index:2;filter:brightness(.42) saturate(.75)}
+.card.cl{transform:translateX(-92%) scale(.8)}
+.card.cr{transform:translateX(92%) scale(.8)}
+.card.cfl,.card.cfr{z-index:1;opacity:0;filter:brightness(.3)}
+.card.cfl{transform:translateX(-170%) scale(.7)}
+.card.cfr{transform:translateX(170%) scale(.7)}
+.card:not(.c0) .ci,.card:not(.c0) .cs{visibility:hidden}
 .card .ci{flex:1 1 300px;min-width:0;padding:36px;box-sizing:border-box;display:flex;flex-direction:column}
 .card .cs{flex:1 1 380px;min-width:0;padding:36px 36px 36px 0;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;gap:12px}
 .card .ctx{margin-top:24px;font-size:15px;font-weight:500;opacity:.9}
 .card h1{margin-top:8px;font-size:clamp(28px,3.4vw,48px)}
 .card .meta{margin-top:14px;opacity:.85}
 .card .enter{margin-top:auto;align-self:flex-start;padding:24px 0 3px;border-bottom:1px solid #FFFFFF;text-decoration:none;font-size:15px}
-.card .side{position:absolute;inset:0;border:none;background:transparent;padding:0}
-.card .sidel{position:absolute;top:28px;max-width:30%;font-size:18px;pointer-events:none}
+.card.c0 .ci>*{animation:rise 600ms cubic-bezier(.22,.8,.2,1) both}
+.card.c0 .ci>*:nth-child(2){animation-delay:60ms}.card.c0 .ci>*:nth-child(3){animation-delay:110ms}.card.c0 .ci>*:nth-child(4){animation-delay:160ms}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.peek{position:absolute;top:0;bottom:0;z-index:4;width:calc((100% - var(--W)) / 2 - 8px);border:none;background:transparent;padding:0 14px;display:flex;flex-direction:column;justify-content:center;gap:6px;color:#FFFFFF;text-align:left;font-size:14px;line-height:1.3}
+.peek.l{left:0;align-items:flex-end;text-align:right}
+.peek.r{right:0;align-items:flex-start}
+.peek .chip{font-size:11px}
+.peek b{font-weight:400;font-size:clamp(14px,1.3vw,18px);max-width:14em}
+.peek small{opacity:.75}
+.peek .arw{opacity:0;transition:opacity 200ms ease,transform 200ms ease}
+.peek:hover .arw,.peek:focus-visible .arw{opacity:1}
+.peek.l:hover .arw{transform:translateX(-4px)}.peek.r:hover .arw{transform:translateX(4px)}
+.peek .bar{display:block;width:44px;height:2px;background:rgba(255,255,255,.35);overflow:hidden}
+.peek .bar i{display:block;height:100%;width:0;background:#FFFFFF}
+.peek.arming .bar i{width:100%;transition:width var(--dwell,450ms) linear}
 .dots{display:flex;justify-content:center;gap:4px;padding-top:12px}
 .dots button{width:36px;height:32px;border:none;background:transparent;padding:0;display:flex;align-items:center}
-.dots span{display:block;width:100%;height:2px;background:var(--line)}
-.dots button[aria-current="true"] span{background:var(--fg)}
-@media (max-width:700px){.card .cs{padding:0 24px 24px}.card .ci{padding:24px}}
+.dots span{display:block;width:100%;height:2px;background:var(--line);overflow:hidden}
+.dots span i{display:block;height:100%;width:0;background:var(--fg)}
+.dots button[aria-current="true"] span i{width:100%;transition:width var(--auto,8000ms) linear}
+.deck.paused~.dots button[aria-current="true"] span i{width:100%;transition:none}
+@media (max-width:700px){.deck{--W:86vw}.card .cs{padding:0 24px 24px}.card .ci{padding:24px}.peek b,.peek small,.peek .chip{display:none}}
+@media (prefers-reduced-motion: reduce){.card{transition:none}.card.c0 .ci>*{animation:none}}
 /* poster */
 .poster{background:var(--tone);color:var(--tone-fg)}
 .poster .wrap{padding-block:12px 44px}
@@ -284,21 +310,23 @@ a.tile:hover .t{text-decoration:underline;text-underline-offset:3px}
   // ── HOME ──
   var deckIdx = 0, rot = 0, current = null;
   function roomCard(r){ var s = lead(r), st = stateOf(s); return { r: r, st: st, when: r.sessions.length > 1 ? s.name + ' · ' + s.when : s.when, meta: r.progress[st] || '' }; }
+  function liveRooms(){ return ROOMS.map(roomCard).filter(function(c){ return c.st !== 'Past'; }).sort(function(a, b){ return ORDER[a.st] - ORDER[b.st]; }); }
+  function cardStage(c){
+    var r = c.r, pcs = allPieces(r), pc = pcs.length ? pcs[rot % pcs.length] : null;
+    return '<a class="shot" href="' + (pc ? '#p/' + pc.p.key : '#s/' + r.key) + '">' + (pc ? visual(pc.p) + (pc.p.type === 'video' ? playIcon : '') : '<span class="ph"><small>' + esc(c.st) + '</small><b>Work appears here once booths fill</b></span>') + '</a>' +
+      (pc ? '<div class="cap"><span><b>' + esc(pc.p.name) + '</b> · ' + esc(pc.b.label) + '</span><span>' + ((rot % pcs.length) + 1) + ' / ' + pcs.length + '</span></div>' : '');
+  }
   function homeHTML(){
-    var live = ROOMS.map(roomCard).filter(function(c){ return c.st !== 'Past'; }).sort(function(a, b){ return ORDER[a.st] - ORDER[b.st]; });
-    var n = live.length, i = ((deckIdx % n) + n) % n, h = '<section class="deck gut" aria-label="Live and coming showrooms">';
-    [-1, 0, 1].forEach(function(off){
-      if (n < 2 && off) return;
-      var c = live[((i + off) % n + n) % n], r = c.r, pcs = allPieces(r), pc = pcs.length ? pcs[rot % pcs.length] : null;
-      h += '<div class="card" style="background:' + r.tone + ';transform:' + (off ? 'translateX(' + (off * 68) + '%) scale(.86)' : 'none') + ';z-index:' + (off ? 1 : 2) + ';filter:' + (off ? 'brightness(.5)' : 'none') + '">';
-      if (off) h += '<button type="button" class="side" data-deck="' + (i + off) + '" aria-label="Bring ' + esc(r.name) + ' to the centre"></button><span class="sidel" style="' + (off < 0 ? 'right:28px;text-align:right' : 'left:28px') + '"><span style="display:block;font-size:12px;opacity:.8">' + c.st + '</span>' + esc(r.name) + '</span>';
-      else h += '<div class="ci"><div class="state" style="color:rgba(255,255,255,.85)"><span class="chip" style="background:' + chipBg(c.st) + '">' + c.st + '</span><span>' + esc(c.when) + '</span></div>' +
-        '<div class="ctx">' + esc(r.ctx) + '</div><h1>' + esc(r.name) + '</h1><div class="meta">' + esc(c.meta) + '</div><a class="enter" href="#s/' + r.key + '">Enter</a></div>' +
-        '<div class="cs"><a class="shot" href="' + (pc ? '#p/' + pc.p.key : '#s/' + r.key) + '">' + (pc ? visual(pc.p) + (pc.p.type === 'video' ? playIcon : '') : '<span class="ph"><small>' + esc(c.st) + '</small><b>Work appears here once booths fill</b></span>') + '</a>' +
-        (pc ? '<div class="cap"><span><b>' + esc(pc.p.name) + '</b> · ' + esc(pc.b.label) + '</span><span>' + ((rot % pcs.length) + 1) + ' / ' + pcs.length + '</span></div>' : '') + '</div>';
-      h += '</div>';
+    var live = liveRooms(), n = live.length, h = '<section class="deck gut" id="deck" tabindex="0" aria-roledescription="carousel" aria-label="Live and coming showrooms">';
+    live.forEach(function(c, k){
+      var r = c.r;
+      h += '<div class="card" data-k="' + k + '" style="background:' + r.tone + '" aria-hidden="true">' +
+        '<div class="ci"><div class="state" style="color:rgba(255,255,255,.85)"><span class="chip" style="background:' + chipBg(c.st) + '">' + c.st + '</span><span>' + esc(c.when) + '</span></div>' +
+        '<div class="ctx">' + esc(r.ctx) + '</div><h1>' + esc(r.name) + '</h1><div class="meta">' + esc(c.meta) + '</div><a class="enter" href="#s/' + r.key + '" tabindex="-1">Enter</a></div>' +
+        '<div class="cs" data-stage="' + k + '">' + cardStage(c) + '</div></div>';
     });
-    h += '</section><div class="dots" role="group" aria-label="Choose a showroom">' + live.map(function(c, k){ return '<button type="button" data-deck="' + k + '" aria-label="Show ' + esc(c.r.name) + '"' + (k === i ? ' aria-current="true"' : '') + '><span></span></button>'; }).join('') + '</div>';
+    if (n > 1) h += '<button type="button" class="peek l" data-step="-1"></button><button type="button" class="peek r" data-step="1"></button>';
+    h += '</section><div class="dots" role="group" aria-label="Choose a showroom">' + live.map(function(c, k){ return '<button type="button" data-deck="' + k + '" aria-label="Show ' + esc(c.r.name) + '"><span><i></i></span></button>'; }).join('') + '</div>';
     h += '<div class="gut"><div class="wrap"><section class="sec" aria-labelledby="rooms-h"><div class="sec-h"><h2 id="rooms-h">Showrooms</h2></div><div class="tiles wide">';
     h += ROOMS.map(function(r){ var c = roomCard(r); return '<a class="rtile" href="#s/' + r.key + '" style="background:' + r.tone + '"><span class="state" style="color:rgba(255,255,255,.85)"><span class="chip" style="background:' + chipBg(c.st) + '">' + c.st + '</span><span>' + esc(c.when) + '</span></span><span class="rs">' + esc(r.ctx) + '</span><span class="rn">' + esc(r.name) + '</span><span class="rm">' + esc(c.meta) + '</span></a>'; }).join('');
     h += '<div><span class="newtile" aria-hidden="true">+</span><span style="display:block;margin-top:12px;font-weight:500">Open a showroom</span><span class="lbl">Coming in a later version</span></div></div></section>';
@@ -390,7 +418,7 @@ a.tile:hover .t{text-decoration:underline;text-underline-offset:3px}
   var app = $('app');
   function render(){
     var hash = location.hash.slice(1), parts = hash.split('/'), kind = parts[0], key = parts[1], f = key ? find(kind, key) : null;
-    current = null; rot = 0;
+    current = null; rot = 0; clearTimeout(autoTimer); clearHover(); hovering = false;
     if (!sbUser && !(f && f.room.isPublic)) { header(''); app.innerHTML = ''; showWall(true); return; }
     showWall(false);
     if (f && kind === 'p') { header('', f.room); app.innerHTML = leafHTML(f.room, f.booth, f.piece, f.k); document.title = f.piece.name + ' · Ergon'; }
@@ -399,14 +427,75 @@ a.tile:hover .t{text-decoration:underline;text-underline-offset:3px}
       header('', f.room); current = boothCfg(f.room, f.booth, f.j); app.innerHTML = page(current); document.title = f.booth.name + ' · Ergon';
     }
     else if (f && kind === 's') { header('', f.room); current = showroomCfg(f.room); app.innerHTML = page(current); document.title = f.room.name + ' · Ergon'; }
-    else { header(kind === 'studios' ? 'studios' : ''); app.innerHTML = homeHTML(); document.title = 'Ergon'; current = 'home';
+    else { header(kind === 'studios' ? 'studios' : ''); app.innerHTML = homeHTML(); placeDeck(); document.title = 'Ergon'; current = 'home';
       if (kind === 'studios') { var el = $('studios-sec'); if (el) { el.scrollIntoView(); return; } } }
     window.scrollTo(0, 0);
   }
-  app.addEventListener('click', function(e){
-    var t = e.target.closest('[data-deck]'); if (!t) return;
-    deckIdx = +t.getAttribute('data-deck'); rot = 0; var y = window.scrollY; app.innerHTML = homeHTML(); window.scrollTo(0, y);
+  // ── HOME CAROUSEL ──
+  var AUTO = 8000, DWELL = 450, REPEAT = 1600, reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var hoverTimer = null, autoTimer = null, hovering = false;
+  function placeDeck(){
+    var deck = $('deck'); if (!deck) return;
+    var live = liveRooms(), n = live.length, i = ((deckIdx % n) + n) % n;
+    deckIdx = i;
+    Array.prototype.forEach.call(deck.querySelectorAll('.card'), function(el){
+      var k = +el.getAttribute('data-k'), off = k - i; if (off > n / 2) off -= n; if (off < -n / 2) off += n;
+      if (n === 2 && off === 1 && i === 1) off = -1;
+      el.className = 'card ' + (off === 0 ? 'c0' : off === -1 ? 'cl' : off === 1 ? 'cr' : off < 0 ? 'cfl' : 'cfr');
+      el.setAttribute('aria-hidden', off === 0 ? 'false' : 'true');
+      var en = el.querySelector('.enter'); if (en) en.tabIndex = off === 0 ? 0 : -1;
+    });
+    var peek = function(sel, k){
+      var b = deck.querySelector(sel); if (!b) return; var c = live[((k % n) + n) % n];
+      var left = sel === '.peek.l';
+      b.innerHTML = '<span class="arw" aria-hidden="true">' + (left ? '←' : '→') + '</span><span class="chip" style="background:' + chipBg(c.st) + '">' + c.st + '</span><b>' + esc(c.r.name) + '</b><small>' + esc(c.when) + '</small><span class="bar" aria-hidden="true"><i></i></span>';
+      b.setAttribute('aria-label', (left ? 'Previous: ' : 'Next: ') + c.r.name);
+    };
+    peek('.peek.l', i - 1); peek('.peek.r', i + 1);
+    Array.prototype.forEach.call(document.querySelectorAll('.dots button'), function(b, k){
+      b.removeAttribute('aria-current'); void b.offsetWidth;
+      if (k === i) b.setAttribute('aria-current', 'true');
+    });
+    armAuto();
+  }
+  function goDeck(k){ deckIdx = k; rot = 0; placeDeck(); var c = liveRooms()[deckIdx], st = document.querySelector('[data-stage="' + deckIdx + '"]'); if (st && c) st.innerHTML = cardStage(c); }
+  function armAuto(){
+    clearTimeout(autoTimer);
+    var deck = $('deck'); if (!deck || reduce || liveRooms().length < 2) return;
+    var paused = hovering || deck.contains(document.activeElement);
+    deck.classList.toggle('paused', paused);
+    if (!paused) autoTimer = setTimeout(function(){ goDeck(deckIdx + 1); }, AUTO);
+  }
+  function clearHover(){ clearTimeout(hoverTimer); hoverTimer = null; Array.prototype.forEach.call(document.querySelectorAll('.peek.arming'), function(b){ b.classList.remove('arming'); }); }
+  app.addEventListener('mouseover', function(e){
+    var deck = e.target.closest && e.target.closest('#deck');
+    if (deck && !hovering) { hovering = true; armAuto(); }
+    var pk = e.target.closest && e.target.closest('.peek');
+    if (!pk || pk.classList.contains('arming')) return;
+    clearHover(); pk.classList.add('arming');
+    var step = +pk.getAttribute('data-step');
+    var tick = function(delay){ hoverTimer = setTimeout(function(){ goDeck(deckIdx + step); pk = document.querySelector(step < 0 ? '.peek.l' : '.peek.r'); if (pk) { pk.classList.remove('arming'); void pk.offsetWidth; pk.classList.add('arming'); } tick(REPEAT); }, delay); };
+    tick(DWELL);
   });
+  app.addEventListener('mouseout', function(e){
+    var to = e.relatedTarget;
+    if (e.target.closest && e.target.closest('.peek') && !(to && to.closest && to.closest('.peek'))) clearHover();
+    if (e.target.closest && e.target.closest('#deck') && !(to && to.closest && to.closest('#deck'))) { hovering = false; clearHover(); armAuto(); }
+  });
+  app.addEventListener('click', function(e){
+    var t = e.target.closest('[data-deck],[data-step]'); if (!t) return;
+    clearHover();
+    goDeck(t.hasAttribute('data-deck') ? +t.getAttribute('data-deck') : deckIdx + +t.getAttribute('data-step'));
+  });
+  app.addEventListener('keydown', function(e){
+    if (!(e.target.closest && e.target.closest('#deck'))) return;
+    if (e.key === 'ArrowLeft') { e.preventDefault(); goDeck(deckIdx - 1); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); goDeck(deckIdx + 1); }
+  });
+  app.addEventListener('focusin', armAuto); app.addEventListener('focusout', function(){ setTimeout(armAuto, 0); });
+  var swipeX = null;
+  app.addEventListener('pointerdown', function(e){ if (e.pointerType !== 'mouse' && e.target.closest && e.target.closest('#deck')) swipeX = e.clientX; });
+  app.addEventListener('pointerup', function(e){ if (swipeX == null) return; var dx = e.clientX - swipeX; swipeX = null; if (Math.abs(dx) > 50) goDeck(deckIdx + (dx < 0 ? 1 : -1)); });
   $('top').addEventListener('click', function(e){
     if (e.target.closest('#me-btn')) { var m = $('me-menu'), open = m.hidden; m.hidden = !open; $('me-btn').setAttribute('aria-expanded', String(open)); return; }
     var a = e.target.closest('[data-act]'); if (!a) return;
@@ -418,7 +507,7 @@ a.tile:hover .t{text-decoration:underline;text-underline-offset:3px}
   setInterval(function(){
     if (document.hidden) return;
     var st = $('stage');
-    if (current === 'home') { var foc = document.activeElement && document.activeElement.closest && document.activeElement.closest('.deck,.dots'); if (foc) return; rot++; var y = window.scrollY; app.innerHTML = homeHTML(); window.scrollTo(0, y); return; }
+    if (current === 'home') { var c = liveRooms()[deckIdx], cs = document.querySelector('[data-stage="' + deckIdx + '"]'); if (c && cs && !cs.contains(document.activeElement)) { rot++; cs.innerHTML = cardStage(c); } return; }
     if (current && st && current.stage.length > 1 && !st.contains(document.activeElement)) { rot++; st.innerHTML = stageHTML(current); }
   }, 4000);
 

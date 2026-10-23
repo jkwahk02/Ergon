@@ -326,8 +326,9 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
       return;
     }
     var initials = String(PROFESSOR.name || '').split(/\s+/).map(function(w){ return w[0]; }).join('').slice(0, 2).toUpperCase() || '–';
+    var item = function(href, label, key){ return '<a href="' + href + '"' + (where === key ? ' aria-current="page"' : '') + '>' + label + '</a>'; };
     top.innerHTML = '<div class="wrap"><a class="brand" href="#home">Ergon</a><nav aria-label="Main">' +
-      '<a href="#home"' + (where === 'studios' ? '' : ' aria-current="page"') + '>Showrooms</a><a href="#studios"' + (where === 'studios' ? ' aria-current="page"' : '') + '>Studios</a></nav>' +
+      item('#about', 'About', 'about') + item('#home', 'Showrooms', 'showrooms') + item('#studios', 'Studios', 'studios') + item('#settings', 'Settings', 'settings') + '</nav>' +
       '<span class="me"><button type="button" id="me-btn" aria-haspopup="true" aria-expanded="false" aria-label="Account: ' + esc(PROFESSOR.name) + '">' + esc(initials) + '</button>' +
       '<span class="menu" id="me-menu" hidden><span class="who" style="display:block">' + esc(PROFESSOR.name) + '<small>' + esc(PROFESSOR.email) + '</small></span>' +
       '<button type="button" data-act="pw">Change password</button><button type="button" data-act="out">Sign out</button></span></span></div>';
@@ -367,6 +368,40 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
       }).join('') + '</div>';
     });
     return h + '</section></div></div>' + foot();
+  }
+
+  // ── ABOUT AND SETTINGS ──
+  function plainPage(title, lead, body){
+    return '<section class="poster gut" style="--tone:#2A2A30"><div class="wrap"><div class="pgrid" style="margin-top:28px"><div class="id"><h1>' + title + '</h1><div class="prog">' + lead + '</div></div></div></div></section>' +
+      '<div class="gut"><div class="wrap">' + body + '</div></div>' + foot();
+  }
+  function aboutHTML(){
+    var sec = function(id, title, rows){ return '<section class="sec" aria-labelledby="' + id + '"><div class="sec-h"><h2 id="' + id + '">' + title + '</h2></div><dl class="facts">' + rows.map(function(x){ return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd>'; }).join('') + '</dl></section>'; };
+    return plainPage('About Ergon', 'Ergon is where work is made and where it is shown. It is the showcase part of Taejae University\'s learning suite, next to Telos (advising), TaeSylla (courses and syllabi) and Arete (outcomes).',
+      sec('a-words', 'How it is organised', [
+        ['Studio', 'Where a team or a person keeps its work all term: slide decks, videos, demos, code, reports. Anyone allowed can drop in and see progress.'],
+        ['Showroom', 'A curated display for a set time and audience, such as a project presentation, a Demo Day or a lecture series. It points to studio work without copying it.'],
+        ['Booth', 'One place inside a showroom for each team or lecturer that sends work.'],
+        ['Piece', 'One work in a booth. It plays where it is: Google Drive for videos, Google Slides for decks.'],
+        ['Session', 'A dated gathering where work is looked at. In a showroom a session is a checkpoint; in a studio it can be a team meeting or an advisor check-in.']
+      ]) +
+      sec('a-roles', 'Who does what', [
+        ['Host', 'Opens a showroom, sets its sessions and who is invited to each, and rates with the rubric where the showroom is linked to an assessment.'],
+        ['Exhibitor', 'A team with a booth. It sends pieces from its studio and decides whether its booth may be shown to outside guests.'],
+        ['Invitee', 'Anyone inside a session\'s audience: the class, Taejae, or the public. A public showroom opens from its link without sign-in.']
+      ]) +
+      sec('a-this', 'In this version', [
+        ['Showrooms', '뇌과학 아카데미 특강 with its lectures · DA321 Project Demo and Presentation and AIRshow without connected work yet'],
+        ['Sign-in', 'Taejae faculty email and password, the same account as TaeSylla and Telos'],
+        ['Invitations', 'A host can copy a showroom link and download its QR code and an invitation card']
+      ]));
+  }
+  function settingsHTML(){
+    var u = PROFESSOR || {}, btn = 'min-height:42px;padding:0 16px;border:1px solid var(--fg);background:var(--bg);font-size:14px';
+    return plainPage('Settings', 'Your Ergon account.',
+      '<section class="sec" aria-labelledby="s-prof"><div class="sec-h"><h2 id="s-prof">Profile</h2></div><dl class="facts"><dt>Name</dt><dd>' + esc(u.name) + '</dd><dt>Email</dt><dd>' + esc(u.email) + '</dd><dt>Profile source</dt><dd>Taejae faculty profile, shared with TaeSylla and Telos</dd></dl></section>' +
+      '<section class="sec" aria-labelledby="s-acc"><div class="sec-h"><h2 id="s-acc">Account</h2></div><div style="display:flex;flex-wrap:wrap;gap:10px"><button type="button" data-set="pw" style="' + btn + '">Change password</button><button type="button" data-set="out" style="' + btn + '">Sign out</button></div></section>' +
+      '<section class="sec" aria-labelledby="s-sess"><div class="sec-h"><h2 id="s-sess">Session</h2></div><p style="margin:0;color:var(--muted);max-width:62ch">You stay signed in while this tab is open, and a refresh keeps you signed in. Closing the tab signs you out.</p></section>');
   }
 
   // ── THE ONE TEMPLATE FOR SHOWROOM, BOOTH AND PIECE ──
@@ -448,13 +483,15 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
     current = null; rot = 0; clearTimeout(autoTimer); clearHover(); hovering = false;
     if (!sbUser && !(f && f.room.isPublic)) { header(''); app.innerHTML = ''; showWall(true); return; }
     showWall(false);
-    if (f && kind === 'p') { header('', f.room); app.innerHTML = leafHTML(f.room, f.booth, f.piece, f.k); document.title = f.piece.name + ' · Ergon'; }
+    if (f && kind === 'p') { header('showrooms', f.room); app.innerHTML = leafHTML(f.room, f.booth, f.piece, f.k); document.title = f.piece.name + ' · Ergon'; }
     else if (f && kind === 'b') {
       if (f.booth.pieces.length === 1) { location.replace('#p/' + f.booth.pieces[0].key); return; }   // a single-piece booth opens on its piece
-      header('', f.room); current = boothCfg(f.room, f.booth, f.j); app.innerHTML = page(current); document.title = f.booth.name + ' · Ergon';
+      header('showrooms', f.room); current = boothCfg(f.room, f.booth, f.j); app.innerHTML = page(current); document.title = f.booth.name + ' · Ergon';
     }
-    else if (f && kind === 's') { header('', f.room); current = showroomCfg(f.room); app.innerHTML = page(current); document.title = f.room.name + ' · Ergon'; }
-    else { header(kind === 'studios' ? 'studios' : ''); app.innerHTML = homeHTML(); placeDeck(); document.title = 'Ergon'; current = 'home';
+    else if (f && kind === 's') { header('showrooms', f.room); current = showroomCfg(f.room); app.innerHTML = page(current); document.title = f.room.name + ' · Ergon'; }
+    else if (kind === 'about') { header('about'); app.innerHTML = aboutHTML(); document.title = 'About · Ergon'; }
+    else if (kind === 'settings') { header('settings'); app.innerHTML = settingsHTML(); document.title = 'Settings · Ergon'; }
+    else { header(kind === 'studios' ? 'studios' : 'showrooms'); app.innerHTML = homeHTML(); placeDeck(); document.title = 'Ergon'; current = 'home';
       if (kind === 'studios') { var el = $('studios-sec'); if (el) { el.scrollIntoView(); return; } } }
     window.scrollTo(0, 0);
   }
@@ -523,6 +560,7 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
   var swipeX = null;
   app.addEventListener('pointerdown', function(e){ if (e.pointerType !== 'mouse' && e.target.closest && e.target.closest('#deck')) swipeX = e.clientX; });
   app.addEventListener('pointerup', function(e){ if (swipeX == null) return; var dx = e.clientX - swipeX; swipeX = null; if (Math.abs(dx) > 50) goDeck(deckIdx + (dx < 0 ? 1 : -1)); });
+  app.addEventListener('click', function(e){ var t = e.target.closest('[data-set]'); if (!t) return; if (t.getAttribute('data-set') === 'out') signOut(); else showPwWall('change'); });
   $('top').addEventListener('click', function(e){
     if (e.target.closest('#me-btn')) { var m = $('me-menu'), open = m.hidden; m.hidden = !open; $('me-btn').setAttribute('aria-expanded', String(open)); return; }
     var a = e.target.closest('[data-act]'); if (!a) return;

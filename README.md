@@ -7,6 +7,8 @@ This repository holds the faculty web app as a single page, `index.html`.
 ## What is in it
 
 - **Home** (faculty, after sign-in): a carousel of live and coming showrooms, then every showroom and the studios grouped by course.
+- **Top menu**: About, Showrooms, Studios, Settings (profile, change password, sign out).
+- **Invite** (host, on a showroom): copy the link, download its QR code and a printable invitation card.
 - **Showroom › Booth › Piece**: one page template at every level. A poster in the showroom's colour with a stage that cycles through the pieces, tiles of what is inside, and the facts. A piece has nothing below it, so its poster folds into a thin band and the piece plays across the full width (Google Drive player for videos, Google Slides viewer for decks).
 - **Showrooms in this version**
   - 뇌과학 아카데미 특강 (Oct 26 – Nov 6, 2026): Prof. Kwahk's Data Science & AI lectures for high-school students. Two booths (Week 1, Week 2), real videos and Google Slides. Public: opens without sign-in.
@@ -19,7 +21,7 @@ Same as Telos and TaeSylla: a Taejae faculty email (`@taejae.ac.kr`) and passwor
 
 ## Pages
 
-`#home`, `#studios`, `#s/<showroom>`, `#b/<booth>`, `#p/<piece>` — for example `#s/brain`, `#b/brain-w1`, `#p/w1v2`.
+`#about`, `#home` (Showrooms), `#studios`, `#settings`, `#s/<showroom>`, `#b/<booth>`, `#p/<piece>` — for example `#s/brain`, `#b/brain-w1`, `#p/w1v2`.
 
 ## Running it
 

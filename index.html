@@ -422,23 +422,27 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
   }
   function aboutHTML(){
     var sec = function(id, title, rows){ return '<section class="sec" aria-labelledby="' + id + '"><div class="sec-h"><h2 id="' + id + '">' + title + '</h2></div><dl class="facts">' + rows.map(function(x){ return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd>'; }).join('') + '</dl></section>'; };
-    return plainPage('About Ergon', 'Ergon is where work is made and where it is shown. It is the showcase part of Taejae University\'s learning suite, next to Telos (advising), TaeSylla (courses and syllabi) and Arete (outcomes).',
-      sec('a-words', 'How it is organised', [
-        ['Studio', 'Where a team or a person keeps its work all term: slide decks, videos, demos, code, reports. Anyone allowed can drop in and see progress.'],
-        ['Showroom', 'A curated display for a set time and audience, such as a project presentation, a Demo Day or a lecture series. It points to studio work without copying it.'],
-        ['Booth', 'One place inside a showroom for each team or lecturer that sends work.'],
-        ['Piece', 'One work in a booth. It plays where it is: Google Drive for videos, Google Slides for decks.'],
-        ['Session', 'A dated gathering where work is looked at. In a showroom a session is a checkpoint; in a studio it can be a team meeting or an advisor check-in.']
+    return plainPage('About Ergon', 'Ergon shows students’ and lecturers’ work to an audience you choose. It is the showcase part of Taejae University’s learning suite, next to Telos, TaeSylla and Arete.',
+      sec('a-words', 'How work is organised', [
+        ['Studio', 'Where a team keeps its work during the term. A showroom shows work from studios without copying it.'],
+        ['Showroom', 'A display for one event and audience, such as a project presentation or a lecture series'],
+        ['Booth', 'One team’s or lecturer’s place in a showroom'],
+        ['Piece', 'One work in a booth. Videos play from Google Drive and decks from Google Slides.'],
+        ['Session', 'A dated meeting where the work is looked at, such as a checkpoint']
       ]) +
-      sec('a-roles', 'Who does what', [
-        ['Host', 'Opens a showroom, sets its sessions and who is invited to each, and rates with the rubric where the showroom is linked to an assessment.'],
-        ['Exhibitor', 'A team with a booth. It sends pieces from its studio and decides whether its booth may be shown to outside guests.'],
-        ['Invitee', 'Anyone inside a session\'s audience: the class, Taejae, or the public. A public showroom opens from its link without sign-in.']
+      sec('a-share', 'Sharing a showroom', [
+        ['Invite', 'Open the showroom and press Invite. Choose who can open it, then copy the link or download the QR code or invitation card.'],
+        ['Public', 'Anyone with the link. No sign-in.'],
+        ['Taejae', 'Anyone with a Taejae account, after sign-in'],
+        ['Class', 'The course’s class, after sign-in. Class lists are not connected yet, so any Taejae account gets in for now.']
       ]) +
-      sec('a-this', 'In this version', [
-        ['Showrooms', '뇌과학 아카데미 특강 with its lectures · DA321 Project Demo and Presentation and AIRshow without connected work yet'],
-        ['Sign-in', 'Taejae faculty email and password, the same account as TaeSylla and Telos'],
-        ['Invitations', 'A host can copy a showroom link and download its QR code and an invitation card']
+      sec('a-roles', 'Who sees what', [
+        ['Faculty', 'Every page: Showrooms, Studios, Settings and Invite'],
+        ['Invitees', 'Only the showroom they were invited to, with its booths and pieces. Those who sign in use the same Taejae email and password as faculty.']
+      ]) +
+      sec('a-check', 'Before you share', [
+        ['Drive files', 'Set each video and deck to “Anyone with the link · Viewer”, or visitors see a Google sign-in page instead of the work'],
+        ['Sign-in', 'Your Taejae faculty email and password, the same account as Telos and TaeSylla']
       ]));
   }
   function settingsHTML(){

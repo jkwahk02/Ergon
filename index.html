@@ -154,8 +154,15 @@ h2{margin:0;font-weight:500;font-size:15px}
 .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:40px 28px}
 .tiles.wide{grid-template-columns:repeat(auto-fill,minmax(360px,1fr))}
 .tile{display:block;text-decoration:none}
-.tile .minis{display:flex;gap:8px;padding:14px;background:var(--tile)}
-.tile .minis img,.tile .minis .ph{flex:1;min-width:0;aspect-ratio:16/9;object-fit:cover;font-size:7px;background:var(--tile);color:var(--muted);box-shadow:0 0 0 1px var(--line);height:auto}
+.tile .minis{display:grid;gap:6px;padding:14px;box-sizing:border-box;aspect-ratio:16/9;max-width:100%;background:var(--tile)}
+/* every booth and studio tile has the same 16:9 preview; inside it, one piece fills it, two split it, three or more give one large and two small */
+.tile .minis.m1{grid-template:1fr/1fr}
+.tile .minis.m2{grid-template:1fr/1fr 1fr}
+.tile .minis.m3{grid-template:1fr 1fr/2fr 1fr}
+.tile .minis.m3>:first-child{grid-row:1/3}
+.tile .minis .cell{position:relative;min-width:0;min-height:0;overflow:hidden;box-shadow:0 0 0 1px var(--line);background:var(--bg)}
+.tile .minis .cell img,.tile .minis .cell .ph{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;font-size:8px;color:var(--muted);background:var(--tile);box-shadow:none}
+.tile .minis .more{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(17,17,17,.55);color:#FFFFFF;font-size:18px;font-weight:500}
 .tile .one{position:relative;display:block;background:var(--tile);padding:14px}
 .tile .one img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;box-shadow:0 0 0 1px var(--line)}
 .tile .one .play{width:44px;height:44px;margin:-22px 0 0 -22px}
@@ -307,6 +314,12 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
   var playIcon = '<span class="play" aria-hidden="true"><svg viewBox="0 0 24 24" width="40%" height="40%" fill="#111111"><path d="M8 5l11 7-11 7z"/></svg></span>';
   var back = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
   var visual = function(p){ return p.img ? '<img src="' + esc(p.img) + '" alt="">' : '<span class="ph"><small>' + esc(p.part || '') + '</small><b>' + esc(p.name) + '</b></span>'; };
+  // the preview inside a booth or studio tile: same box for every tile, layout by how many pieces it holds
+  function mosaic(cells){
+    if (!cells.length) return '<span class="minis m1"><span class="cell"><span class="ph"></span></span></span>';
+    var shown = cells.slice(0, 3), extra = cells.length - shown.length;
+    return '<span class="minis m' + shown.length + '">' + shown.map(function(c, i){ return '<span class="cell">' + c + (extra && i === shown.length - 1 ? '<span class="more">+' + extra + '</span>' : '') + '</span>'; }).join('') + '</span>';
+  }
   var allPieces = function(room){ var out = []; room.booths.forEach(function(b){ b.pieces.forEach(function(p){ out.push({ p: p, b: b }); }); }); return out; };
   function find(kind, key){
     for (var i = 0; i < ROOMS.length; i++) {
@@ -364,7 +377,7 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
     STUDIOS.forEach(function(g){
       h += '<div class="group"><b>' + esc(g.group) + '</b><span class="lbl">' + esc(g.meta) + '</span></div><div class="tiles">';
       h += g.items.map(function(o){
-        var inner = '<span class="minis">' + (o.imgs.length ? o.imgs.map(function(src){ return '<img src="' + src + '" alt="">'; }).join('') : '<span class="ph"></span><span class="ph"></span><span class="ph"></span>') + '</span>' +
+        var inner = mosaic(o.imgs.map(function(src){ return '<img src="' + src + '" alt="">'; })) +
           '<span class="row"><span>' + esc(o.who) + '</span><span></span></span><span class="t">' + esc(o.name) + '</span><span class="s">' + esc(o.note) + '</span>';
         return o.href ? '<a class="tile" href="' + o.href + '">' + inner + '</a>' : '<div class="tile">' + inner + '</div>';
       }).join('') + '</div>';
@@ -447,7 +460,7 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
       tilesTitle: 'Booths', noTiles: 'Booths appear here as teams send work', facts: r.facts, factsTitle: 'About this showroom',
       tiles: r.booths.map(function(b){
         var n = b.pieces.length, bs = b.from ? boothState(r, b) : null;
-        return '<a class="tile" href="#b/' + b.key + '"><span class="minis">' + (n ? b.pieces.slice(0, 3).map(visual).join('') : '<span class="ph"></span><span class="ph"></span><span class="ph"></span>') + '</span>' +
+        return '<a class="tile" href="#b/' + b.key + '">' + mosaic(b.pieces.map(visual)) +
           '<span class="row"><span>' + esc(b.label) + (b.when ? ' · ' + esc(b.when) : '') + '</span><span>' + plural(n, 'piece') + '</span></span><span class="t">' + esc(b.name) + '</span>' +
           '<span class="s">' + (bs === 'On stage' ? 'On stage now' : bs === 'Past' ? 'Shown ' + esc(b.when) : bs ? 'Starts ' + esc(String(b.when).split('–')[0]) : n ? '' : 'Nothing sent yet') + '</span></a>';
       }) };

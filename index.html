@@ -334,7 +334,8 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
       '<span class="menu" id="me-menu" hidden><span class="who" style="display:block">' + esc(PROFESSOR.name) + '<small>' + esc(PROFESSOR.email) + '</small></span>' +
       '<button type="button" data-act="pw">Change password</button><button type="button" data-act="out">Sign out</button></span></span></div>';
   }
-  var foot = function(){ return '<div class="foot gut"><div class="wrap">' + (sbUser ? 'Ergon · Taejae University' : 'Taejae University · shown with Ergon') + '</div></div>'; };
+  var foot = function(){ return '<div class="foot gut"><div class="wrap"><div>' + (sbUser ? 'Ergon · Taejae University' : 'Taejae University · shown with Ergon') + '</div>' +
+    '<div style="margin-top:6px">Created by Jiyoung Kwahk, Ph.D. · © ' + new Date().getFullYear() + ' Taejae University. All rights reserved.</div></div></div>'; };
 
   // ── HOME ──
   var deckIdx = 0, rot = 0, current = null;

@@ -265,6 +265,7 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
   var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVja3R1dWFseXV2Y3RpeGxranZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTczOTgsImV4cCI6MjA5MDc3MzM5OH0.EauKNa2US2VQ4dTdCzx0DBZXlw4OR-CQnlMRuulYfB8';
   var SESSION_KEY = 'ergon_session';
   var sbUser = null, PROFESSOR = null, loginAttempts = 0, loginLocked = false;
+  var isFaculty = function(){ return !!(sbUser && PROFESSOR && PROFESSOR.isFaculty); };
 
   var esc = function(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var d = function(s){ return new Date(s + 'T00:00:00+09:00'); };
@@ -361,11 +362,14 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
   // ── HEADER: signed-in faculty get Ergon; a visitor on a public showroom sees only Taejae and the showroom ──
   function header(where, publicRoom){
     var top = $('top');
-    if (!sbUser) {
-      top.innerHTML = '<div class="wrap"><a class="hostname" href="#s/' + (publicRoom ? publicRoom.key : '') + '">태재대학교' + (publicRoom ? ' · <b>' + esc(publicRoom.name) + '</b>' : '') + '</a></div>';
+    var hostLink = '<a class="hostname" href="#s/' + (publicRoom ? publicRoom.key : '') + '">태재대학교' + (publicRoom ? ' · <b>' + esc(publicRoom.name) + '</b>' : '') + '</a>';
+    if (!sbUser || !PROFESSOR) { top.innerHTML = '<div class="wrap">' + hostLink + '</div>'; return; }
+    var initials = String(PROFESSOR.name || '').split(/\s+/).map(function(w){ return w[0]; }).join('').slice(0, 2).toUpperCase() || '–';
+    if (!isFaculty()) {
+      top.innerHTML = '<div class="wrap">' + hostLink + '<span class="me" style="margin-left:auto"><button type="button" id="me-btn" aria-haspopup="true" aria-expanded="false" aria-label="Account: ' + esc(PROFESSOR.name) + '">' + esc(initials) + '</button>' +
+        '<span class="menu" id="me-menu" hidden><span class="who" style="display:block">' + esc(PROFESSOR.name) + '<small>' + esc(PROFESSOR.email) + '</small></span><button type="button" data-act="pw">Change password</button><button type="button" data-act="out">Sign out</button></span></span></div>';
       return;
     }
-    var initials = String(PROFESSOR.name || '').split(/\s+/).map(function(w){ return w[0]; }).join('').slice(0, 2).toUpperCase() || '–';
     var item = function(href, label, key){ return '<a href="' + href + '"' + (where === key ? ' aria-current="page"' : '') + '>' + label + '</a>'; };
     top.innerHTML = '<div class="wrap"><a class="brand" href="#home">Ergon</a><nav aria-label="Main">' +
       item('#about', 'About', 'about') + item('#home', 'Showrooms', 'showrooms') + item('#studios', 'Studios', 'studios') + item('#settings', 'Settings', 'settings') + '</nav>' +
@@ -373,7 +377,7 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
       '<span class="menu" id="me-menu" hidden><span class="who" style="display:block">' + esc(PROFESSOR.name) + '<small>' + esc(PROFESSOR.email) + '</small></span>' +
       '<button type="button" data-act="pw">Change password</button><button type="button" data-act="out">Sign out</button></span></span></div>';
   }
-  var foot = function(){ return '<div class="foot gut"><div class="wrap"><div>' + (sbUser ? 'Ergon · Taejae University' : 'Taejae University · shown with Ergon') + '</div>' +
+  var foot = function(){ return '<div class="foot gut"><div class="wrap"><div>' + (isFaculty() ? 'Ergon · Taejae University' : 'Taejae University · shown with Ergon') + '</div>' +
     '<div style="margin-top:6px">Created by Jiyoung Kwahk, Ph.D. · © ' + new Date().getFullYear() + ' Jiyoung Kwahk. All rights reserved.</div></div></div>'; };
 
   // ── HOME ──
@@ -454,7 +458,7 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
     return h + (tools || '') + '</div>';
   }
   // a visitor without sign-in starts the path at the showroom: they cannot go above it
-  var rootPath = function(r){ return sbUser ? [['Showrooms', '#home'], [r.name, '#s/' + r.key]] : [[r.name, '#s/' + r.key]]; };
+  var rootPath = function(r){ return isFaculty() ? [['Showrooms', '#home'], [r.name, '#s/' + r.key]] : [[r.name, '#s/' + r.key]]; };
   function stageHTML(cfg){
     var s = cfg.stage;
     if (!s.length) return '<span class="shot"><span class="ph"><small>' + esc(cfg.empty) + '</small><b>' + esc(cfg.name) + '</b></span></span>';
@@ -463,7 +467,7 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
       '<div class="cap"><span><b>' + esc(it.p.name) + '</b> · ' + esc(it.sub) + '</span><span>' + (k + 1) + ' / ' + s.length + '</span></div>';
   }
   function page(cfg){
-    var h = '<section class="poster gut" style="--tone:' + cfg.tone + '" aria-label="' + esc(cfg.name) + '"><div class="wrap">' + crumb(cfg.path, cfg.sib, cfg.invite && sbUser ? '<button type="button" class="ibtn" data-invite="' + cfg.invite + '">Invite</button>' : '') +
+    var h = '<section class="poster gut" style="--tone:' + cfg.tone + '" aria-label="' + esc(cfg.name) + '"><div class="wrap">' + crumb(cfg.path, cfg.sib, cfg.invite && isFaculty() ? '<button type="button" class="ibtn" data-invite="' + cfg.invite + '">Invite</button>' : '') +
       '<div class="pgrid"><div class="id"><div class="state"><span class="chip" style="background:' + chipBg(cfg.state) + '">' + cfg.state + '</span><span>' + esc(cfg.when) + '</span></div>' +
       '<div class="ctx">' + esc(cfg.ctx) + '</div><h1>' + esc(cfg.name) + '</h1>' + (cfg.prog ? '<div class="prog">' + esc(cfg.prog) + '</div>' : '') +
       '<dl class="idl">' + cfg.dl.map(function(x){ return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd>'; }).join('') + '</dl>' +
@@ -480,7 +484,7 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
   }
   function showroomCfg(r){
     var s = lead(r), st = stateOf(s);
-    return { invite: r.key, tone: r.tone, path: sbUser ? [['Showrooms', '#home'], [r.name, null]] : [[r.name, null]], state: st, when: r.sessions.length > 1 ? s.name + ' · ' + s.when : s.when, ctx: r.ctx, name: r.name,
+    return { invite: r.key, tone: r.tone, path: isFaculty() ? [['Showrooms', '#home'], [r.name, null]] : [[r.name, null]], state: st, when: r.sessions.length > 1 ? s.name + ' · ' + s.when : s.when, ctx: r.ctx, name: r.name,
       prog: r.progress[st] || '', dl: [['Host', r.host], ['Booths', plural(r.booths.length, 'booth')]], sessions: r.sessions, lead: s,
       stage: allPieces(r).map(function(x){ return { p: x.p, sub: x.b.label + ' · ' + x.p.part }; }), empty: r.booths.length ? 'Nothing sent yet' : 'Booths appear here as teams send work',
       tilesTitle: 'Booths', noTiles: 'Booths appear here as teams send work', facts: r.facts, factsTitle: 'About this showroom',
@@ -523,11 +527,17 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
     var hash = location.hash.slice(1), parts = hash.split('/'), kind = parts[0], key = parts[1], f = key ? find(kind, key) : null;
     current = null; rot = 0; clearTimeout(autoTimer); clearHover(); hovering = false;
     if (f && kind === 's' && AUD[parts[2]]) { try { sessionStorage.setItem('ergon_aud_' + f.room.key, parts[2]); } catch (e) {} }
+    if (f) { try { sessionStorage.setItem('ergon_last_room', f.room.key); } catch (e) {} }
     if (f && !canView(f.room)) {
       header('', sbUser ? null : f.room); showWall(false);
       app.innerHTML = gateHTML(f.room); document.title = f.room.name + ' · Ergon'; window.scrollTo(0, 0); return;
     }
     if (!sbUser && !f) { header(''); app.innerHTML = ''; wallFor(null); showWall(true); return; }
+    if (sbUser && PROFESSOR && !isFaculty() && !f) {   // a signed-in member asking for a faculty page goes back to the showroom they came for
+      var last = null; try { last = sessionStorage.getItem('ergon_last_room'); } catch (e) {}
+      if (last && find('s', last)) { location.replace('#s/' + last); return; }
+      header(''); showWall(false); app.innerHTML = '<section class="poster gut" style="--tone:#2A2A30"><div class="wrap"><div class="pgrid" style="margin-top:28px;min-height:240px"><div class="id"><h1>Ergon</h1><div class="prog">You are signed in as ' + esc(PROFESSOR.email) + '. Open a showroom from the link you were sent.</div></div></div></div></section>' + foot(); return;
+    }
     showWall(false);
     if (f && kind === 'p') { header('showrooms', f.room); app.innerHTML = leafHTML(f.room, f.booth, f.piece, f.k); document.title = f.piece.name + ' · Ergon'; }
     else if (f && kind === 'b') {
@@ -552,7 +562,7 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
       '</div></div></div></section>' + foot();
   }
   function wallFor(r){
-    $('wall-sub').textContent = r ? 'Sign in with your Taejae account to open ' + r.name + '.' : 'Use your Taejae faculty email to sign in';
+    $('wall-sub').textContent = r ? 'Sign in with your Taejae email and password (the same account as Telos) to open ' + r.name + '.' : 'Use your Taejae faculty email to sign in';
   }
   app.addEventListener('click', function(e){ var t = e.target.closest('[data-gate]'); if (!t) return; var f = find('s', t.getAttribute('data-gate')); wallFor(f && f.room); showWall(true); });
 
@@ -736,7 +746,7 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
       .then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; })
       .then(function(rows){
         var p = Array.isArray(rows) && rows[0];
-        PROFESSOR = { name: (p && p.name_en) || (sbUser.user && sbUser.user.user_metadata && sbUser.user.user_metadata.full_name) || authEmail.split('@')[0], email: authEmail };
+        PROFESSOR = { name: (p && p.name_en) || (sbUser.user && sbUser.user.user_metadata && sbUser.user.user_metadata.full_name) || authEmail.split('@')[0], email: authEmail, isFaculty: !!p };
         render();
         if (p && p.must_change_password === true) showPwWall('first');
       });

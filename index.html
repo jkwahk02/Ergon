@@ -314,7 +314,7 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
       booths: [] }
   ];
   var STUDIOS = [
-    { group: '뇌과학 아카데미 · Fall 2026', meta: 'Your studio', items: [{ who: '곽지영 교수', name: '뇌과학 아카데미 강의', note: 'Sent to 뇌과학 아카데미 특강', imgs: ['img/w1-l1.png', 'img/w1-slides.png', 'img/w2-slides.png'], href: '#s/brain' }] },
+    { group: 'Your studio', meta: 'For your own work · only you see it until you send it to a showroom', items: [{ who: '곽지영 교수', name: '뇌과학 아카데미 강의', note: 'Sent to 뇌과학 아카데미 특강', imgs: ['img/w1-l1.png', 'img/w1-slides.png', 'img/w2-slides.png'], href: '#s/brain' }] },
     { group: 'DA321 Data Analytics and Visualization · Fall 2026', meta: '9 team studios', items: DA321_TEAMS.map(function(t, i){ return { who: 'Team ' + (i + 1), name: t, note: 'Studio not connected yet', imgs: [] }; }) }
   ];
 
@@ -424,7 +424,7 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
     var sec = function(id, title, rows){ return '<section class="sec" aria-labelledby="' + id + '"><div class="sec-h"><h2 id="' + id + '">' + title + '</h2></div><dl class="facts">' + rows.map(function(x){ return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd>'; }).join('') + '</dl></section>'; };
     return plainPage('About Ergon', 'Ergon shows students’ and lecturers’ work to an audience you choose. It is the showcase part of Taejae University’s learning suite, next to Telos, TaeSylla and Arete.',
       sec('a-words', 'How work is organised', [
-        ['Studio', 'Where a team keeps its work during the term. A showroom shows work from studios without copying it.'],
+        ['Studio', 'Where work is kept. Each faculty member has a studio for their own work, and each student team has one for its course. A showroom shows work from studios without copying it.'],
         ['Showroom', 'A display for one event and audience, such as a project presentation or a lecture series'],
         ['Booth', 'One team’s or lecturer’s place in a showroom'],
         ['Piece', 'One work in a booth. Videos play from Google Drive and decks from Google Slides.'],
@@ -437,7 +437,7 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
         ['Class', 'The course’s class, after sign-in. Class lists are not connected yet, so any Taejae account gets in for now.']
       ]) +
       sec('a-roles', 'Who sees what', [
-        ['Faculty', 'Every page: Showrooms, Studios, Settings and Invite'],
+        ['Faculty', 'Every page: Showrooms, Studios, Settings and Invite. Your own studio stays private until you send work to a showroom.'],
         ['Invitees', 'Only the showroom they were invited to, with its booths and pieces. Those who sign in use the same Taejae email and password as faculty.']
       ]) +
       sec('a-check', 'Before you share', [

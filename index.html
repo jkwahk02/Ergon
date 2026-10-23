@@ -3,14 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>뇌과학 아카데미 특강</title>
+<title>Ergon</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Noto+Sans+KR:wght@300;400;500;700&display=swap">
-<style id="css">
-/* Layout: one Ergon page template, taken from the showroom page — a poster in the showroom colour (who/what/when on the left, a stage on the right), tiles of what is inside, then the facts. Showroom, booth and piece all use it. */
+<style>
+/* Ergon for faculty. Home lists the showrooms (a carousel of what is live, then every showroom and studio).
+   Every showroom, booth and piece uses one template: a poster in the showroom colour with a stage, tiles of what is inside, facts.
+   A piece is the leaf, so its poster folds into a thin band and the piece itself fills the width. */
 :root{
   --bg:#FFFFFF; --fg:#111111; --muted:#5E6068; --line:#E4E4E8; --tile:#F2F2EF; --warn:#8A3A0A;
-  --tone:#16233F; --tone-fg:#FFFFFF; --tone-soft:rgba(255,255,255,.74); --stage:#F2C14E; --accent:#C9874A;
+  --tone:#16233F; --tone-fg:#FFFFFF; --tone-soft:rgba(255,255,255,.76); --stage:#F2C14E; --accent:#C9874A;
   --sans:"Inter","Noto Sans KR",system-ui,-apple-system,"Segoe UI",sans-serif;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
@@ -19,395 +21,493 @@
 body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.55}
 img{max-width:100%}
 a{color:inherit}
-button,input,select{font-family:inherit;color:inherit}
+button,input{font-family:inherit;color:inherit}
 button{cursor:pointer}
-button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,[contenteditable]:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 .gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .wrap{max-width:1360px;margin:0 auto}
 header.top{border-bottom:1px solid var(--line)}
-header.top .wrap{display:flex;align-items:center;gap:28px;padding-block:18px;min-height:28px}
+header.top .wrap{display:flex;align-items:center;gap:28px;padding-block:14px;min-height:44px}
 .brand{font-weight:600;font-size:17px;text-decoration:none}
-.host{font-size:15px}
-.host b{font-weight:600}
+.hostname{font-size:15px;text-decoration:none}
+.hostname b{font-weight:600}
 header nav{margin-left:auto;display:flex;gap:24px;font-size:14px}
 header nav a{text-decoration:none}
-header nav a[aria-current]{border-bottom:1px solid var(--fg)}
-.who{font-size:14px;color:var(--muted)}
+header nav a[aria-current="page"]{border-bottom:1px solid var(--fg)}
+.signin{margin-left:auto;font-size:14px;text-decoration:underline;text-underline-offset:3px}
+.me{position:relative}
+.me>button{width:36px;height:36px;border-radius:50%;border:none;background:var(--tile);font-size:13px;font-weight:600}
+.menu{position:absolute;right:0;top:44px;z-index:20;min-width:220px;padding:8px 0;background:var(--bg);box-shadow:0 0 0 1px var(--line),0 8px 24px rgba(0,0,0,.12)}
+.menu .who{padding:8px 16px 10px;border-bottom:1px solid var(--line);font-size:14px}
+.menu .who small{display:block;color:var(--muted)}
+.menu button{display:block;width:100%;min-height:40px;padding:0 16px;border:none;background:transparent;text-align:left;font-size:14px}
+.menu button:hover{background:var(--tile)}
 .lbl{font-size:12px;letter-spacing:.04em;color:var(--muted)}
 h1{margin:0;font-weight:300;letter-spacing:-.02em;line-height:1.08;text-wrap:balance}
 h2{margin:0;font-weight:500;font-size:15px}
+.chip{display:inline-block;padding:3px 9px;font-size:12px;font-weight:600;color:#111111}
+/* sign-in (same flow as TaeSylla and Telos) */
+.wall{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:var(--bg)}
+.wall[hidden]{display:none}
+.wcard{width:100%;max-width:420px;margin:0 16px;box-shadow:0 0 0 1px var(--line)}
+.wcard .wh{padding:32px 32px 20px;border-bottom:1px solid var(--line)}
+.wcard .wh .brand{display:block;margin-bottom:18px}
+.wcard .wh h2{font-weight:300;font-size:28px;letter-spacing:-.01em}
+.wcard .wh p{margin:6px 0 0;color:var(--muted)}
+.wcard form{padding:24px 32px 32px;display:flex;flex-direction:column;gap:14px}
+.wcard label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted)}
+.wcard input{min-height:46px;padding:0 12px;border:1px solid var(--line);background:var(--bg);font-size:16px}
+.wcard .err{min-height:20px;font-size:14px;color:var(--warn)}
+.wcard button[type=submit]{min-height:46px;border:none;background:var(--fg);color:var(--bg);font-size:15px;font-weight:500}
+.wcard button[type=submit]:disabled{opacity:.6;cursor:default}
+.wcard .alt{font-size:13px;color:var(--muted)}
+/* home: the carousel of live showrooms */
+.deck{position:relative;height:clamp(440px,58vw,600px);margin-top:28px;overflow:hidden}
+.card{position:absolute;top:0;bottom:0;left:50%;width:min(1120px,80vw);margin-left:calc(min(1120px,80vw) / -2);display:flex;flex-wrap:wrap;color:#FFFFFF;transition:transform 600ms cubic-bezier(.2,.7,.2,1),filter 600ms ease;overflow:hidden}
+.card .ci{flex:1 1 300px;min-width:0;padding:36px;box-sizing:border-box;display:flex;flex-direction:column}
+.card .cs{flex:1 1 380px;min-width:0;padding:36px 36px 36px 0;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;gap:12px}
+.card .ctx{margin-top:24px;font-size:15px;font-weight:500;opacity:.9}
+.card h1{margin-top:8px;font-size:clamp(28px,3.4vw,48px)}
+.card .meta{margin-top:14px;opacity:.85}
+.card .enter{margin-top:auto;align-self:flex-start;padding:24px 0 3px;border-bottom:1px solid #FFFFFF;text-decoration:none;font-size:15px}
+.card .side{position:absolute;inset:0;border:none;background:transparent;padding:0}
+.card .sidel{position:absolute;top:28px;max-width:30%;font-size:18px;pointer-events:none}
+.dots{display:flex;justify-content:center;gap:4px;padding-top:12px}
+.dots button{width:36px;height:32px;border:none;background:transparent;padding:0;display:flex;align-items:center}
+.dots span{display:block;width:100%;height:2px;background:var(--line)}
+.dots button[aria-current="true"] span{background:var(--fg)}
+@media (max-width:700px){.card .cs{padding:0 24px 24px}.card .ci{padding:24px}}
 /* poster */
 .poster{background:var(--tone);color:var(--tone-fg)}
-.poster .wrap{padding-block:18px 44px}
+.poster .wrap{padding-block:12px 44px}
 .crumb{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;min-height:44px;font-size:14px;color:var(--tone-soft)}
-.crumb a{display:inline-flex;align-items:center;gap:8px;min-height:44px;text-decoration:none;color:var(--tone-fg)}
 .crumb .path{display:flex;flex-wrap:wrap;align-items:center;gap:0 8px;min-width:0}
+.crumb .path a{display:inline-flex;align-items:center;gap:6px;min-height:44px;text-decoration:none;color:var(--tone-fg)}
 .crumb .path .sep{opacity:.6}
-.crumb .path .here{color:var(--tone-soft)}
 .crumb .sib{margin-left:auto;display:flex;align-items:center;gap:6px}
-.crumb .sib a{padding:0 6px}
-.crumb .sib span{font-variant-numeric:tabular-nums}
-.ebtn{min-height:36px;padding:0 14px;border:1px solid rgba(255,255,255,.6);background:transparent;color:var(--tone-fg);font-size:13px}
-.ebtn.solid{background:#FFFFFF;color:#111111;border-color:#FFFFFF;font-weight:600}
-.etools{display:flex;align-items:center;gap:8px;margin-left:12px}
-.emsg{font-size:13px;color:var(--tone-soft)}
-.pgrid{display:flex;flex-wrap:wrap;align-items:center;gap:32px 56px;margin-top:18px}
+.crumb .sib a{display:inline-flex;align-items:center;min-height:44px;padding:0 6px;text-decoration:none;color:var(--tone-fg)}
+.pgrid{display:flex;flex-wrap:wrap;align-items:center;gap:32px 56px;margin-top:14px}
 .id{flex:1 1 340px;min-width:0;display:flex;flex-direction:column}
 .state{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--tone-soft)}
-.chip{display:inline-block;padding:3px 9px;font-size:12px;font-weight:600;color:#111111}
-.ctx{margin-top:24px;font-size:clamp(15px,1.3vw,19px);font-weight:500;line-height:1.35}
+.id .ctx{margin-top:24px;font-size:clamp(15px,1.3vw,19px);font-weight:500;line-height:1.35}
 .id h1{margin-top:8px;font-size:clamp(32px,3.8vw,56px)}
 .prog{margin-top:14px;color:var(--tone-soft);max-width:56ch}
-[contenteditable="true"]{outline:1px dashed rgba(255,255,255,.55);outline-offset:4px;cursor:text}
 .idl{margin:22px 0 0;display:grid;grid-template-columns:84px 1fr;gap:6px 14px;font-size:14px}
 .idl dt{color:var(--tone-soft)} .idl dd{margin:0}
 .stage{flex:1 1 520px;max-width:720px;min-width:0}
-.shot{display:block;position:relative;width:100%;aspect-ratio:16/9;background:#0B1220;overflow:hidden;text-decoration:none}
+.shot{display:block;position:relative;width:100%;aspect-ratio:16/9;background:rgba(0,0,0,.25);overflow:hidden;text-decoration:none}
 .shot img{display:block;width:100%;height:100%;object-fit:cover;animation:fade 600ms ease}
-.ph{display:flex;flex-direction:column;justify-content:flex-end;gap:6px;width:100%;height:100%;box-sizing:border-box;padding:7%;background:#22324F;color:#FFFFFF}
-.ph small{font-size:.8em;opacity:.75;letter-spacing:.04em}
-.ph b{font-weight:300;font-size:1.6em;line-height:1.15}
+.ph{display:flex;flex-direction:column;justify-content:flex-end;gap:6px;width:100%;height:100%;box-sizing:border-box;padding:7%;background:rgba(255,255,255,.08);color:#FFFFFF;box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)}
+.ph small{font-size:.8em;opacity:.8;letter-spacing:.04em}
+.ph b{font-weight:300;font-size:1.5em;line-height:1.15}
 .cap{display:flex;justify-content:space-between;gap:12px;margin-top:12px;font-size:14px}
 .cap b{font-weight:600}
-.cap span:last-child{color:var(--tone-soft);font-variant-numeric:tabular-nums}
+.cap span:last-child{opacity:.75;font-variant-numeric:tabular-nums}
 .play{position:absolute;left:50%;top:50%;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:50%;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center}
-.pbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;min-height:52px;padding:0 14px;background:#0B1220;font-size:14px}
-.pbar a{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;background:#FFFFFF;color:#111111;text-decoration:none;font-weight:600}
-.pbar .note{color:var(--tone-soft)}
 .sess{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));column-gap:20px;margin-top:36px;border-top:1px solid rgba(255,255,255,.28)}
-.sess div{padding:12px 8px 0 0;margin-top:-1px;border-top:2px solid #FFFFFF;font-weight:600;font-size:14px}
-.sess small{display:block;font-weight:400;color:var(--tone-soft);font-size:12px}
+.sess div{padding:12px 8px 0 0;margin-top:-1px;border-top:2px solid transparent;font-size:14px;color:var(--tone-soft)}
+.sess div.on{border-top-color:#FFFFFF;color:#FFFFFF;font-weight:600}
+.sess small{display:block;font-weight:400;font-size:12px;opacity:.85}
 @keyframes fade{from{opacity:0}to{opacity:1}}
-/* tiles and facts */
-.sec{padding-block:56px 0}
-.sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-bottom:12px;margin-bottom:24px;border-bottom:1px solid var(--fg)}
-.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:40px 28px}
-.tbox.off .tile{opacity:.45}
-.tile{display:block;text-decoration:none}
-.tile .minis{display:flex;gap:8px;padding:14px;background:var(--tile)}
-.tile .minis img,.tile .minis .ph{flex:1;min-width:0;aspect-ratio:16/9;object-fit:cover;box-shadow:0 0 0 1px var(--line);font-size:7px}
-.tile .one{position:relative;display:block;background:var(--tile);padding:14px}
-.tile .one img,.tile .one .ph{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;box-shadow:0 0 0 1px var(--line);font-size:11px;height:auto}
-.tile .one .play{width:44px;height:44px;margin:-22px 0 0 -22px}
-.tile .row{display:flex;justify-content:space-between;gap:8px;margin-top:12px;font-size:12px;color:var(--muted)}
-.tile .t{display:block;margin-top:4px;font-size:17px;font-weight:500;line-height:1.3}
-.tile .s{display:block;margin-top:6px;font-size:13px;color:var(--muted)}
-.tile:hover .t{text-decoration:underline;text-underline-offset:3px}
-.tctl{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px}
-.tctl button{min-height:34px;padding:0 10px;border:1px solid var(--line);background:var(--bg);font-size:13px}
-.tctl .hid{color:var(--warn);font-size:13px;margin-left:4px}
-.add{border:1px dashed var(--muted);padding:16px;display:flex;flex-direction:column;gap:10px;font-size:14px}
-.add label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
-.add input,.add select{min-height:40px;padding:0 10px;border:1px solid var(--line);background:var(--bg);font-size:14px;color:var(--fg)}
-.add button{align-self:flex-start;min-height:40px;padding:0 16px;border:none;background:var(--fg);color:var(--bg);font-weight:500}
-.facts{display:grid;grid-template-columns:minmax(110px,190px) 1fr;gap:14px 24px;max-width:900px;margin:0}
-.facts dt{color:var(--muted)} .facts dd{margin:0}
-@media (max-width:640px){.facts{grid-template-columns:1fr;gap:2px}.facts dd{margin-bottom:12px}}
-.foot{padding-block:48px 72px;color:var(--muted);font-size:13px}
-/* piece (leaf): the poster shrinks to a band and the piece fills the browser width */
+/* piece: a thin band and the piece across the full width */
 .band .wrap{padding-block:4px 16px}
 .brow{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px}
-.brow .state{flex:none}
 .brow .bt{min-width:0;flex:1 1 320px;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 12px}
-.brow .ctx{margin:0;font-size:14px;font-weight:500;color:var(--tone-soft)}
-.brow h1{margin:0;font-size:clamp(20px,2.1vw,28px)}
+.brow .ctx{font-size:14px;font-weight:500;color:var(--tone-soft)}
+.brow h1{font-size:clamp(20px,2.1vw,28px)}
 .acts{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .acts a{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;text-decoration:none;font-size:14px}
 .acts a.go{background:#FFFFFF;color:#111111;font-weight:600}
 .acts a.src{color:var(--tone-fg);text-decoration:underline;text-underline-offset:3px;padding:0 4px}
 .full{background:#0B1220}
-.full a{display:block;position:relative;margin:0 auto;max-width:calc((100vh - 140px) * 16 / 9)}
-.full img,.full .ph{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;height:auto;font-size:clamp(14px,1.6vw,22px)}
 .full iframe{display:block;width:100%;max-width:calc((100vh - 140px) * 16 / 9);aspect-ratio:16/9;margin:0 auto;border:0;background:#0B1220}
-.full .play{width:88px;height:88px;margin:-44px 0 0 -44px}
-@media (prefers-reduced-motion: reduce){.shot img{animation:none}}
+/* tiles and facts */
+.sec{padding-block:56px 0}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-bottom:12px;margin-bottom:24px;border-bottom:1px solid var(--fg)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:40px 28px}
+.tiles.wide{grid-template-columns:repeat(auto-fill,minmax(360px,1fr))}
+.tile{display:block;text-decoration:none}
+.tile .minis{display:flex;gap:8px;padding:14px;background:var(--tile)}
+.tile .minis img,.tile .minis .ph{flex:1;min-width:0;aspect-ratio:16/9;object-fit:cover;font-size:7px;background:var(--tile);color:var(--muted);box-shadow:0 0 0 1px var(--line);height:auto}
+.tile .one{position:relative;display:block;background:var(--tile);padding:14px}
+.tile .one img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;box-shadow:0 0 0 1px var(--line)}
+.tile .one .play{width:44px;height:44px;margin:-22px 0 0 -22px}
+.tile .row{display:flex;justify-content:space-between;gap:8px;margin-top:12px;font-size:12px;color:var(--muted)}
+.tile .t{display:block;margin-top:4px;font-size:17px;font-weight:500;line-height:1.3}
+.tile .s{display:block;margin-top:6px;font-size:13px;color:var(--muted)}
+a.tile:hover .t{text-decoration:underline;text-underline-offset:3px}
+.rtile{display:flex;flex-direction:column;aspect-ratio:16/9;padding:22px;box-sizing:border-box;color:#FFFFFF;text-decoration:none}
+.rtile .rs{margin-top:auto;font-size:13px;opacity:.85}
+.rtile .rn{margin-top:6px;font-weight:300;font-size:26px;line-height:1.1;letter-spacing:-.01em}
+.rtile .rm{margin-top:10px;font-size:13px;opacity:.9}
+.newtile{display:flex;align-items:center;justify-content:center;aspect-ratio:16/9;box-shadow:inset 0 0 0 1px var(--line);font-weight:300;font-size:32px;color:var(--muted)}
+.empty{padding:28px 0;color:var(--muted)}
+.group{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:28px 0 16px}
+.group b{font-size:18px;font-weight:500}
+.facts{display:grid;grid-template-columns:minmax(110px,190px) 1fr;gap:14px 24px;max-width:900px;margin:0}
+.facts dt{color:var(--muted)} .facts dd{margin:0}
+@media (max-width:640px){.facts{grid-template-columns:1fr;gap:2px}.facts dd{margin-bottom:12px}}
+.foot{padding-block:48px 72px;color:var(--muted);font-size:13px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:60;padding:10px 16px;background:var(--fg);color:var(--bg);font-size:14px}
+.toast[hidden]{display:none}
+@media (prefers-reduced-motion: reduce){.shot img{animation:none}.card{transition:none}}
 </style>
 </head>
 <body>
 <header class="top gut" id="top"></header>
 <main id="app"></main>
-<script type="application/json" id="state">{}</script>
-<script id="app-js">
-(function(){
-  var SKEL = '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>';
-  var esc = function(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
-  var saved = {};
-  try { saved = JSON.parse(document.getElementById('state').textContent || '{}') || {}; } catch (e) { saved = {}; }
-  var clone = function(o){ return JSON.parse(JSON.stringify(o)); };
 
-  // Where a piece opens: videos in Drive, slide decks as a Google Slides slideshow, added pieces at their own link
-  var OPEN = function(p){ return p.link || (p.type === 'slides' ? 'https://docs.google.com/presentation/d/' + p.id + '/present' : 'https://drive.google.com/file/d/' + p.id + '/view'); };
-  var EMBED = function(p){ if (p.link) return p.type === 'slides' && /presentation\/d\/([^/]+)/.test(p.link) ? 'https://docs.google.com/presentation/d/' + p.link.match(/presentation\/d\/([^/]+)/)[1] + '/embed?start=false&loop=false' : ''; return p.type === 'slides' ? 'https://docs.google.com/presentation/d/' + p.id + '/embed?start=false&loop=false' : 'https://drive.google.com/file/d/' + p.id + '/preview'; };
-  var SOURCE = function(p){ return p.link || (p.type === 'slides' ? 'https://docs.google.com/presentation/d/' + p.id + '/view' : 'https://drive.google.com/file/d/' + p.id + '/view'); };
+<!-- SIGN-IN (same as TaeSylla and Telos: Taejae faculty email and password, shared Supabase project) -->
+<div class="wall" id="login-wall" hidden>
+  <div class="wcard">
+    <div class="wh"><span class="brand">Ergon</span><h2>Sign in</h2><p>Use your Taejae faculty email to sign in</p></div>
+    <form id="login-form" novalidate>
+      <label for="wall-email">Email<input id="wall-email" type="email" autocomplete="username" placeholder="your@taejae.ac.kr" required></label>
+      <label for="wall-password">Password<input id="wall-password" type="password" autocomplete="current-password" required></label>
+      <div class="err" id="wall-error" role="alert"></div>
+      <button type="submit" id="wall-submit">Sign in</button>
+      <div class="alt" id="wall-alt"></div>
+    </form>
+  </div>
+</div>
+<div class="wall" id="pw-wall" hidden>
+  <div class="wcard">
+    <div class="wh"><span class="brand">Ergon</span><h2 id="pw-title">Set your password</h2><p id="pw-desc">This is your first sign-in. Please set a new password to continue.</p></div>
+    <form id="pw-form" novalidate>
+      <label for="pw-new">New password<input id="pw-new" type="password" autocomplete="new-password" placeholder="At least 8 characters" required></label>
+      <label for="pw-confirm">Confirm password<input id="pw-confirm" type="password" autocomplete="new-password" required></label>
+      <div class="err" id="pw-error" role="alert"></div>
+      <button type="submit" id="pw-submit">Set password &amp; continue</button>
+    </form>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(function(){
+  // ── SUPABASE (the project Telos and TaeSylla share) ──
+  var SUPABASE_URL = 'https://ecktuualyuvctixlkjve.supabase.co';
+  var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVja3R1dWFseXV2Y3RpeGxranZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTczOTgsImV4cCI6MjA5MDc3MzM5OH0.EauKNa2US2VQ4dTdCzx0DBZXlw4OR-CQnlMRuulYfB8';
+  var SESSION_KEY = 'ergon_session';
+  var sbUser = null, PROFESSOR = null, loginAttempts = 0, loginLocked = false;
+
+  var esc = function(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var d = function(s){ return new Date(s + 'T00:00:00+09:00'); };
-  var BASE_ROOM = { key: 'showroom', name: '뇌과학 아카데미 특강', ctx: 'Data Science & AI · for high-school students', prog: '', when: 'Oct 26 – Nov 6, 2026', from: d('2026-10-26'), to: d('2026-11-07') };
-  var BASE_BOOTHS = [
-    { key: 'week1', label: 'Week 1', name: 'AI는 어떻게 학습하는가', when: 'Oct 26–30', from: d('2026-10-26'), to: d('2026-10-31'),
-      prog: '뇌를 모방한 신경망. 규칙에서 인공신경망으로, 학습의 원리, 그리고 AI가 세상을 보는 방법까지 세 차시로 다룹니다.',
-      pieces: [
-        { key: 'w1v1', type: 'video', name: 'AI 학습: 규칙에서 인공신경망으로', part: 'Lesson 1 · video', src: 'MP4 in Google Drive · 47 MB', img: 'img/w1-l1.png', id: '1FMwLRbq5MmnOD9iOpAx6ccx7n-XIoLtt' },
-        { key: 'w1v2', type: 'video', name: 'AI는 어떻게 학습하는가', part: 'Lesson 2 · video', src: 'MP4 in Google Drive · 33 MB', img: 'img/w1-l2.png', id: '1YeRh2HVez5ZDfha1duyZOh_XKLGfR2KP' },
-        { key: 'w1v3', type: 'video', name: 'AI는 어떻게 세상을 볼까?', part: 'Lesson 3 · video', src: 'MP4 in Google Drive · 40 MB', img: 'img/w1-l3.png', id: '1FJAo3n1syx0U1lYYvpuuP7Ve1lkSJlWs' },
-        { key: 'w1s', type: 'slides', name: 'AI는 어떻게 학습하는가', part: 'Slides · all three lessons', src: 'Google Slides', img: 'img/w1-slides.png', id: '1cdtuXB1-qEXQEPwnKROorhPRt_zyWM0ZgOgPkb3StVQ' }
+  var $ = function(id){ return document.getElementById(id); };
+  // Where a piece opens and how it plays in place
+  var OPEN = function(p){ return p.type === 'slides' ? 'https://docs.google.com/presentation/d/' + p.id + '/present' : 'https://drive.google.com/file/d/' + p.id + '/view'; };
+  var SOURCE = function(p){ return p.type === 'slides' ? 'https://docs.google.com/presentation/d/' + p.id + '/view' : 'https://drive.google.com/file/d/' + p.id + '/view'; };
+  var EMBED = function(p){ return p.type === 'slides' ? 'https://docs.google.com/presentation/d/' + p.id + '/embed?start=false&loop=false' : 'https://drive.google.com/file/d/' + p.id + '/preview'; };
+
+  // ── DATA: the faculty member's showrooms and studios ──
+  var DA321_TEAMS = ['Vietnam’s Climate-Tech Ecosystem', 'Korea in East Asian Ceramics', 'Spatial Audio from Natural Language', 'Accessible Bladder Data Visualization', 'Income Distribution and Household Consumption in China', 'Global Brands’ Marketing Across Markets', 'K-pop Comeback Success', 'Seoul Scout', 'The Searcher’s Workbench'];
+  var ROOMS = [
+    { key: 'brain', name: '뇌과학 아카데미 특강', ctx: 'Data Science & AI · for high-school students', tone: '#16233F', host: '곽지영 교수', isPublic: true,
+      sessions: [{ name: '특강 기간', when: 'Oct 26 – Nov 6, 2026', open: d('2026-10-19'), from: d('2026-10-26'), to: d('2026-11-07') }],
+      facts: [['What', '고교생 대상 뇌과학 아카데미의 Data Science & AI 특강. 뇌를 모방한 신경망에서 언어 모델까지, 두 주 동안 여섯 차시.'], ['Booths', 'One per week · lecture videos and slides'], ['Audience', 'Anyone with the link, no sign-in needed'], ['Pieces play in', 'Google Drive for videos · Google Slides for decks']],
+      progress: { 'On stage': 'Lessons open · participants and parents invited', 'Open': 'Lessons ready · opens Oct 26', 'Coming soon': 'Opens Oct 26', 'Past': 'Recordings and slides stay open' },
+      booths: [
+        { key: 'brain-w1', label: 'Week 1', name: 'AI는 어떻게 학습하는가', when: 'Oct 26–30', from: d('2026-10-26'), to: d('2026-10-31'), people: [['Lecturer', '곽지영 교수']],
+          prog: '뇌를 모방한 신경망. 규칙에서 인공신경망으로, 학습의 원리, 그리고 AI가 세상을 보는 방법까지 세 차시로 다룹니다.',
+          pieces: [
+            { key: 'w1v1', type: 'video', name: 'AI 학습: 규칙에서 인공신경망으로', part: 'Lesson 1 · video', src: 'MP4 in Google Drive · 47 MB', img: 'img/w1-l1.png', id: '1FMwLRbq5MmnOD9iOpAx6ccx7n-XIoLtt' },
+            { key: 'w1v2', type: 'video', name: 'AI는 어떻게 학습하는가', part: 'Lesson 2 · video', src: 'MP4 in Google Drive · 33 MB', img: 'img/w1-l2.png', id: '1YeRh2HVez5ZDfha1duyZOh_XKLGfR2KP' },
+            { key: 'w1v3', type: 'video', name: 'AI는 어떻게 세상을 볼까?', part: 'Lesson 3 · video', src: 'MP4 in Google Drive · 40 MB', img: 'img/w1-l3.png', id: '1FJAo3n1syx0U1lYYvpuuP7Ve1lkSJlWs' },
+            { key: 'w1s', type: 'slides', name: 'AI는 어떻게 학습하는가', part: 'Slides · all three lessons', src: 'Google Slides', img: 'img/w1-slides.png', id: '1cdtuXB1-qEXQEPwnKROorhPRt_zyWM0ZgOgPkb3StVQ' }
+          ] },
+        { key: 'brain-w2', label: 'Week 2', name: 'AI는 어떻게 대화하는가', when: 'Nov 2–6', from: d('2026-11-02'), to: d('2026-11-07'), people: [['Lecturer', '곽지영 교수']],
+          prog: '언어 모델의 원리. 뇌가 기억을 만드는 방식에서 출발해, AI가 말을 이해하고 이어 가는 방법을 세 차시로 다룹니다.',
+          pieces: [
+            { key: 'w2s', type: 'slides', name: 'AI는 어떻게 대화하는가', part: 'Slides · all three lessons', src: 'Google Slides', img: 'img/w2-slides.png', id: '1UvkCOd2Mv8MSArCVtBUtIsDVLj1XdqIbA8EtVxIbGJg' }
+          ] }
       ] },
-    { key: 'week2', label: 'Week 2', name: 'AI는 어떻게 대화하는가', when: 'Nov 2–6', from: d('2026-11-02'), to: d('2026-11-07'),
-      prog: '언어 모델의 원리. 뇌가 기억을 만드는 방식에서 출발해, AI가 말을 이해하고 이어 가는 방법을 세 차시로 다룹니다.',
-      pieces: [
-        { key: 'w2s', type: 'slides', name: 'AI는 어떻게 대화하는가', part: 'Slides · all three lessons', src: 'Google Slides', img: 'img/w2-slides.png', id: '1UvkCOd2Mv8MSArCVtBUtIsDVLj1XdqIbA8EtVxIbGJg' }
-      ] }
+    { key: 'da321', name: 'Project Demo and Presentation', ctx: 'DA321 Data Analytics and Visualization · Fall 2026', tone: '#123B37', host: '곽지영 교수',
+      sessions: [
+        { name: 'EDA workshop', when: 'Oct 5 & 7', open: d('2026-09-28'), from: d('2026-10-05'), to: d('2026-10-08') },
+        { name: 'Data-analytics case study', when: 'Nov 2', open: d('2026-10-12'), from: d('2026-11-02'), to: d('2026-11-03') },
+        { name: 'Visualization case study', when: 'Nov 23', open: d('2026-10-26'), from: d('2026-11-23'), to: d('2026-11-24') },
+        { name: 'Demo Day', when: 'Dec 7 & 9', open: d('2026-11-10'), from: d('2026-12-07'), to: d('2026-12-10') }
+      ],
+      facts: [['Booths', 'One per DA321 team, sent from its studio'], ['Audience', 'Class at every session · outside guests at Demo Day'], ['Reactions', 'Comments · audience vote at Demo Day'], ['In this version', 'Team work is not connected yet']],
+      progress: { 'On stage': 'Appraisal open', 'Open': 'Teams are sending work', 'Coming soon': 'Opens for work soon', 'Past': 'All sessions shown' },
+      booths: DA321_TEAMS.map(function(t, i){ return { key: 'da321-t' + (i + 1), label: 'Team ' + (i + 1), name: t, people: [['Team', 'Team ' + (i + 1)]], prog: '', pieces: [] }; }) },
+    { key: 'airshow', name: 'AIRshow', ctx: 'AIR Project · Fall 2026', tone: '#3A2A12', host: 'AIR Project',
+      sessions: [{ name: 'Showcase', when: '[DATE]', open: d('2099-01-01'), from: d('2099-01-01'), to: d('2099-01-02') }],
+      facts: [['What', 'Advanced Independent Research: student teams define their own questions and build their own answers'], ['Booths', 'AIR teams, by open call'], ['Audience', 'Taejae community'], ['Awards', 'Innovative Research and Real-world Impact (faculty committee) · Outstanding Presentation (community vote)']],
+      progress: { 'Coming soon': 'Booths by open call' },
+      booths: [] }
+  ];
+  var STUDIOS = [
+    { group: '뇌과학 아카데미 · Fall 2026', meta: 'Your studio', items: [{ who: '곽지영 교수', name: '뇌과학 아카데미 강의', note: 'Sent to 뇌과학 아카데미 특강', imgs: ['img/w1-l1.png', 'img/w1-slides.png', 'img/w2-slides.png'], href: '#s/brain' }] },
+    { group: 'DA321 Data Analytics and Visualization · Fall 2026', meta: '9 team studios', items: DA321_TEAMS.map(function(t, i){ return { who: 'Team ' + (i + 1), name: t, note: 'Studio not connected yet', imgs: [] }; }) }
   ];
 
-  // What the host changed is kept in the page itself (state): text, order, hidden items, added booths and pieces
-  var ui = { editing: false, draft: null, canEdit: false, member: false, artifact: null, msg: '' };
-  var S = function(){ return ui.editing ? ui.draft : saved; };
-  var txt = function(key, field, base){ var t = (S().text || {})[key]; return t && t[field] != null ? t[field] : base; };
-  var isHidden = function(key){ return !!(S().hidden || {})[key]; };
-  var ordered = function(list, key){ var o = (S().order || {})[key]; if (!o) return list; var r = o.map(function(k){ return list.filter(function(x){ return x.key === k; })[0]; }).filter(Boolean); return r.concat(list.filter(function(x){ return o.indexOf(x.key) < 0; })); };
-  function model(){
-    var st = S(), room = Object.assign({}, BASE_ROOM);
-    room.name = txt('showroom', 'name', room.name); room.ctx = txt('showroom', 'ctx', room.ctx); room.prog = txt('showroom', 'prog', '');
-    var booths = BASE_BOOTHS.concat((st.addedBooths || []).map(function(b){ return Object.assign({ from: room.from, to: room.to, pieces: [] }, b); }));
-    booths = booths.map(function(b){
-      var pieces = b.pieces.concat(((st.addedPieces || {})[b.key]) || []).map(function(p){ return Object.assign({}, p, { name: txt(p.key, 'name', p.name), part: txt(p.key, 'ctx', p.part), src: txt(p.key, 'prog', p.src), hidden: isHidden(p.key) }); });
-      pieces = ordered(pieces, b.key);
-      return Object.assign({}, b, { name: txt(b.key, 'name', b.name), label: txt(b.key, 'ctx', b.label), prog: txt(b.key, 'prog', b.prog), hidden: isHidden(b.key), all: pieces,
-        pieces: ui.editing ? pieces : pieces.filter(function(p){ return !p.hidden; }) });
-    });
-    booths = ordered(booths, 'showroom');
-    return { room: room, all: booths, booths: ui.editing ? booths : booths.filter(function(b){ return !b.hidden; }) };
-  }
-
+  // ── STATE OF A SHOWROOM FROM TODAY'S DATE ──
   var now = new Date();
-  var stateOf = function(from, to){ return now < from ? 'Coming soon' : now < to ? 'On stage' : 'Past'; };
-  var chipBg = function(st){ return st === 'On stage' ? '#F2C14E' : st === 'Past' ? 'rgba(255,255,255,.5)' : 'rgba(255,255,255,.8)'; };
-  var playIcon = '<span class="play" aria-hidden="true"><svg viewBox="0 0 24 24" width="40%" height="40%" fill="#111111"><path d="M8 5l11 7-11 7z"/></svg></span>';
-  var back = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
+  var stateOf = function(s){ return now < s.open ? 'Coming soon' : now < s.from ? 'Open' : now < s.to ? 'On stage' : 'Past'; };
+  var ORDER = { 'On stage': 0, 'Open': 1, 'Coming soon': 2, 'Past': 3 };
+  function lead(room){ return room.sessions.slice().sort(function(a, b){ var x = ORDER[stateOf(a)], y = ORDER[stateOf(b)]; return x - y || (x === 3 ? b.from - a.from : a.from - b.from); })[0]; }
+  var boothState = function(r, b){ return b.from ? stateOf({ open: b.from, from: b.from, to: b.to }) : stateOf(lead(r)); };
+  var chipBg = function(st){ return st === 'On stage' ? '#F2C14E' : st === 'Open' ? '#FFFFFF' : st === 'Past' ? 'rgba(255,255,255,.5)' : 'rgba(255,255,255,.8)'; };
   var plural = function(n, w){ return n + ' ' + w + (n === 1 ? '' : 's'); };
-  var typeName = function(t){ return t === 'video' ? 'Video' : t === 'slides' ? 'Google Slides' : 'Link'; };
-  var visual = function(p){ return p.img ? '<img src="' + esc(p.img) + '" alt="">' : '<span class="ph"><small>' + esc(typeName(p.type)) + '</small><b>' + esc(p.name) + '</b></span>'; };
-  var M = null, rot = 0, current = null;
-  function findPiece(key){ for (var i = 0; i < M.all.length; i++) for (var j = 0; j < M.all[i].all.length; j++) if (M.all[i].all[j].key === key) return { b: M.all[i], p: M.all[i].all[j], j: M.all[i].pieces.indexOf(M.all[i].all[j]) }; return null; }
-  function findBooth(key){ for (var i = 0; i < M.all.length; i++) if (M.all[i].key === key) return { b: M.all[i], i: M.booths.indexOf(M.all[i]) }; return null; }
-
-  // Header: Taejae members see Ergon; anyone else sees only the host and the showroom
-  function header(){
-    var top = document.getElementById('top');
-    top.innerHTML = ui.member
-      ? '<div class="wrap"><a class="brand" href="#showroom">Ergon</a><nav aria-label="Main"><a href="#showroom" aria-current="page">Showrooms</a><a href="#showroom">Studios</a></nav><span class="who">' + (ui.canEdit ? 'Host' : 'Taejae') + '</span></div>'
-      : '<div class="wrap"><a class="host" href="#showroom">태재대학교 · <b>' + esc(M ? M.room.name : BASE_ROOM.name) + '</b></a></div>';
+  var playIcon = '<span class="play" aria-hidden="true"><svg viewBox="0 0 24 24" width="40%" height="40%" fill="#111111"><path d="M8 5l11 7-11 7z"/></svg></span>';
+  var back = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
+  var visual = function(p){ return p.img ? '<img src="' + esc(p.img) + '" alt="">' : '<span class="ph"><small>' + esc(p.part || '') + '</small><b>' + esc(p.name) + '</b></span>'; };
+  var allPieces = function(room){ var out = []; room.booths.forEach(function(b){ b.pieces.forEach(function(p){ out.push({ p: p, b: b }); }); }); return out; };
+  function find(kind, key){
+    for (var i = 0; i < ROOMS.length; i++) {
+      var r = ROOMS[i]; if (kind === 's' && r.key === key) return { room: r };
+      for (var j = 0; j < r.booths.length; j++) {
+        var b = r.booths[j]; if (kind === 'b' && b.key === key) return { room: r, booth: b, j: j };
+        for (var k = 0; k < b.pieces.length; k++) if (kind === 'p' && b.pieces[k].key === key) return { room: r, booth: b, piece: b.pieces[k], k: k };
+      }
+    }
+    return null;
   }
 
-  // The one template
-  function crumbHTML(cfg){
-    var ed = ui.editing, h = '<div class="crumb"><nav class="path" aria-label="Path">';
-    cfg.crumb.path.forEach(function(x, i){
-      if (i) h += '<span class="sep" aria-hidden="true">›</span>';
-      h += x[1] ? '<a href="' + x[1] + '">' + (i === 0 ? back : '') + esc(x[0]) + '</a>' : '<span class="here" aria-current="page">' + esc(x[0]) + '</span>';
+  // ── HEADER: signed-in faculty get Ergon; a visitor on a public showroom sees only Taejae and the showroom ──
+  function header(where, publicRoom){
+    var top = $('top');
+    if (!sbUser) {
+      top.innerHTML = '<div class="wrap"><a class="hostname" href="#s/' + (publicRoom ? publicRoom.key : '') + '">태재대학교' + (publicRoom ? ' · <b>' + esc(publicRoom.name) + '</b>' : '') + '</a><a class="signin" href="#home">Taejae sign-in</a></div>';
+      return;
+    }
+    var initials = String(PROFESSOR.name || '').split(/\s+/).map(function(w){ return w[0]; }).join('').slice(0, 2).toUpperCase() || '–';
+    top.innerHTML = '<div class="wrap"><a class="brand" href="#home">Ergon</a><nav aria-label="Main">' +
+      '<a href="#home"' + (where === 'studios' ? '' : ' aria-current="page"') + '>Showrooms</a><a href="#studios"' + (where === 'studios' ? ' aria-current="page"' : '') + '>Studios</a></nav>' +
+      '<span class="me"><button type="button" id="me-btn" aria-haspopup="true" aria-expanded="false" aria-label="Account: ' + esc(PROFESSOR.name) + '">' + esc(initials) + '</button>' +
+      '<span class="menu" id="me-menu" hidden><span class="who" style="display:block">' + esc(PROFESSOR.name) + '<small>' + esc(PROFESSOR.email) + '</small></span>' +
+      '<button type="button" data-act="pw">Change password</button><button type="button" data-act="out">Sign out</button></span></span></div>';
+  }
+  var foot = function(){ return '<div class="foot gut"><div class="wrap">' + (sbUser ? 'Ergon · Taejae University' : 'Taejae University · shown with Ergon') + '</div></div>'; };
+
+  // ── HOME ──
+  var deckIdx = 0, rot = 0, current = null;
+  function roomCard(r){ var s = lead(r), st = stateOf(s); return { r: r, st: st, when: r.sessions.length > 1 ? s.name + ' · ' + s.when : s.when, meta: r.progress[st] || '' }; }
+  function homeHTML(){
+    var live = ROOMS.map(roomCard).filter(function(c){ return c.st !== 'Past'; }).sort(function(a, b){ return ORDER[a.st] - ORDER[b.st]; });
+    var n = live.length, i = ((deckIdx % n) + n) % n, h = '<section class="deck gut" aria-label="Live and coming showrooms">';
+    [-1, 0, 1].forEach(function(off){
+      if (n < 2 && off) return;
+      var c = live[((i + off) % n + n) % n], r = c.r, pcs = allPieces(r), pc = pcs.length ? pcs[rot % pcs.length] : null;
+      h += '<div class="card" style="background:' + r.tone + ';transform:' + (off ? 'translateX(' + (off * 68) + '%) scale(.86)' : 'none') + ';z-index:' + (off ? 1 : 2) + ';filter:' + (off ? 'brightness(.5)' : 'none') + '">';
+      if (off) h += '<button type="button" class="side" data-deck="' + (i + off) + '" aria-label="Bring ' + esc(r.name) + ' to the centre"></button><span class="sidel" style="' + (off < 0 ? 'right:28px;text-align:right' : 'left:28px') + '"><span style="display:block;font-size:12px;opacity:.8">' + c.st + '</span>' + esc(r.name) + '</span>';
+      else h += '<div class="ci"><div class="state" style="color:rgba(255,255,255,.85)"><span class="chip" style="background:' + chipBg(c.st) + '">' + c.st + '</span><span>' + esc(c.when) + '</span></div>' +
+        '<div class="ctx">' + esc(r.ctx) + '</div><h1>' + esc(r.name) + '</h1><div class="meta">' + esc(c.meta) + '</div><a class="enter" href="#s/' + r.key + '">Enter</a></div>' +
+        '<div class="cs"><a class="shot" href="' + (pc ? '#p/' + pc.p.key : '#s/' + r.key) + '">' + (pc ? visual(pc.p) + (pc.p.type === 'video' ? playIcon : '') : '<span class="ph"><small>' + esc(c.st) + '</small><b>Work appears here once booths fill</b></span>') + '</a>' +
+        (pc ? '<div class="cap"><span><b>' + esc(pc.p.name) + '</b> · ' + esc(pc.b.label) + '</span><span>' + ((rot % pcs.length) + 1) + ' / ' + pcs.length + '</span></div>' : '') + '</div>';
+      h += '</div>';
     });
+    h += '</section><div class="dots" role="group" aria-label="Choose a showroom">' + live.map(function(c, k){ return '<button type="button" data-deck="' + k + '" aria-label="Show ' + esc(c.r.name) + '"' + (k === i ? ' aria-current="true"' : '') + '><span></span></button>'; }).join('') + '</div>';
+    h += '<div class="gut"><div class="wrap"><section class="sec" aria-labelledby="rooms-h"><div class="sec-h"><h2 id="rooms-h">Showrooms</h2></div><div class="tiles wide">';
+    h += ROOMS.map(function(r){ var c = roomCard(r); return '<a class="rtile" href="#s/' + r.key + '" style="background:' + r.tone + '"><span class="state" style="color:rgba(255,255,255,.85)"><span class="chip" style="background:' + chipBg(c.st) + '">' + c.st + '</span><span>' + esc(c.when) + '</span></span><span class="rs">' + esc(r.ctx) + '</span><span class="rn">' + esc(r.name) + '</span><span class="rm">' + esc(c.meta) + '</span></a>'; }).join('');
+    h += '<div><span class="newtile" aria-hidden="true">+</span><span style="display:block;margin-top:12px;font-weight:500">Open a showroom</span><span class="lbl">Coming in a later version</span></div></div></section>';
+    h += '<section class="sec" aria-labelledby="studios-h" id="studios-sec"><div class="sec-h"><h2 id="studios-h">Studios</h2></div>';
+    STUDIOS.forEach(function(g){
+      h += '<div class="group"><b>' + esc(g.group) + '</b><span class="lbl">' + esc(g.meta) + '</span></div><div class="tiles">';
+      h += g.items.map(function(o){
+        var inner = '<span class="minis">' + (o.imgs.length ? o.imgs.map(function(src){ return '<img src="' + src + '" alt="">'; }).join('') : '<span class="ph"></span><span class="ph"></span><span class="ph"></span>') + '</span>' +
+          '<span class="row"><span>' + esc(o.who) + '</span><span></span></span><span class="t">' + esc(o.name) + '</span><span class="s">' + esc(o.note) + '</span>';
+        return o.href ? '<a class="tile" href="' + o.href + '">' + inner + '</a>' : '<div class="tile">' + inner + '</div>';
+      }).join('') + '</div>';
+    });
+    return h + '</section></div></div>' + foot();
+  }
+
+  // ── THE ONE TEMPLATE FOR SHOWROOM, BOOTH AND PIECE ──
+  function crumb(path, sib){
+    var h = '<div class="crumb"><nav class="path" aria-label="Path">';
+    path.forEach(function(x, i){ if (i) h += '<span class="sep" aria-hidden="true">›</span>'; h += x[1] ? '<a href="' + x[1] + '">' + (i === 0 ? back : '') + esc(x[0]) + '</a>' : '<span aria-current="page">' + esc(x[0]) + '</span>'; });
     h += '</nav>';
-    if (cfg.crumb.prev) h += '<span class="sib"><a href="#' + cfg.crumb.prev[0] + '">← ' + esc(cfg.crumb.prev[1]) + '</a><span>' + cfg.crumb.pos + '</span><a href="#' + cfg.crumb.next[0] + '">' + esc(cfg.crumb.next[1]) + ' →</a></span>';
-    if (ui.canEdit) h += '<span class="etools"' + (cfg.crumb.prev ? '' : ' style="margin-left:auto"') + '>' + (ed
-      ? '<span class="emsg" role="status">' + esc(ui.msg || 'Editing') + '</span><button type="button" class="ebtn" data-act="cancel">Cancel</button><button type="button" class="ebtn solid" data-act="save">Save</button>'
-      : '<span class="emsg" role="status">' + esc(ui.msg) + '</span><button type="button" class="ebtn" data-act="edit">Edit</button>') + '</span>';
+    if (sib) h += '<span class="sib"><a href="' + sib.prev[0] + '">← ' + esc(sib.prev[1]) + '</a><span>' + sib.pos + '</span><a href="' + sib.next[0] + '">' + esc(sib.next[1]) + ' →</a></span>';
     return h + '</div>';
   }
-  function lower(cfg){
-    var ed = ui.editing, h = '<div class="gut"><div class="wrap">', tiles = cfg.tiles || [];
-    if (tiles.length || (ed && cfg.addForm)) h += '<section class="sec" aria-labelledby="t-h"><div class="sec-h"><h2 id="t-h">' + esc(cfg.tilesTitle) + '</h2></div><div class="tiles">' + tiles.join('') + (ed && cfg.addForm ? cfg.addForm : '') + '</div></section>';
-    if (cfg.facts) h += '<section class="sec" aria-labelledby="f-h"><div class="sec-h"><h2 id="f-h">' + esc(cfg.factsTitle) + '</h2></div><dl class="facts">' + cfg.facts.map(function(x){ return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd>'; }).join('') + '</dl></section>';
-    return h + '</div></div><div class="foot gut"><div class="wrap">' + (ui.member ? 'Ergon · Taejae University' : 'Taejae University · shown with Ergon') + '</div></div>';
-  }
-  // A piece is a leaf: nothing below it, so the poster becomes a thin band and the piece takes the full width
-  function leaf(cfg){
-    var p = cfg.piece, ed = ui.editing;
-    var ce = function(field){ return ed ? ' contenteditable="true" data-key="' + cfg.key + '" data-field="' + field + '" spellcheck="false"' : ''; };
-    var go = p.type === 'video' ? 'Open in Google Drive' : p.type === 'slides' ? 'Present as a slideshow' : 'Open';
-    var h = '<section class="poster band gut" aria-label="' + esc(cfg.name) + '"><div class="wrap">' + crumbHTML(cfg) +
-      '<div class="brow"><div class="state"><span class="chip" style="background:' + chipBg(cfg.state) + '">' + cfg.state + '</span><span>' + esc(cfg.when) + '</span></div>' +
-      '<div class="bt"><span class="ctx"' + ce('ctx') + '>' + esc(cfg.ctx) + '</span><h1' + ce('name') + '>' + esc(cfg.name) + '</h1></div>' +
-      '<div class="acts"><a class="go" href="' + esc(OPEN(p)) + '" target="_blank" rel="noopener">' + go + '</a><a class="src" href="' + esc(SOURCE(p)) + '" target="_blank" rel="noopener">' + (p.type === 'slides' ? 'Google Slides ↗' : 'Original ↗') + '</a></div></div>' +
-      '</div></section>' +
-      '<div class="full">' + (EMBED(p) ? '<iframe src="' + esc(EMBED(p)) + '" title="' + esc(p.name) + '" allow="autoplay; fullscreen" allowfullscreen loading="lazy"></iframe>' : '<a href="' + esc(OPEN(p)) + '" target="_blank" rel="noopener" aria-label="Open ' + esc(p.name) + '">' + visual(p) + (p.type === 'video' ? playIcon : '') + '</a>') + '</div>';
-    return h + lower(cfg);
-  }
-
-  function page(cfg){
-    if (cfg.piece) return leaf(cfg);
-    var ed = ui.editing, h = '<section class="poster gut" aria-label="' + esc(cfg.name) + '"><div class="wrap">' + crumbHTML(cfg).replace(/<\/div>$/, '');
-    var ce = function(field){ return ed && cfg.key ? ' contenteditable="true" data-key="' + cfg.key + '" data-field="' + field + '" spellcheck="false"' : ''; };
-    h += '</div><div class="pgrid"><div class="id">' +
-      '<div class="state"><span class="chip" style="background:' + chipBg(cfg.state) + '">' + cfg.state + '</span><span>' + esc(cfg.when) + '</span></div>' +
-      '<div class="ctx"' + ce('ctx') + '>' + esc(cfg.ctx) + '</div><h1' + ce('name') + '>' + esc(cfg.name) + '</h1><div class="prog"' + ce('prog') + '>' + esc(cfg.prog) + '</div>';
-    if (cfg.dl) h += '<dl class="idl">' + cfg.dl.map(function(x){ return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd>'; }).join('') + '</dl>';
-    h += '</div><div class="stage" id="stage">' + stageHTML(cfg) + '</div></div>';
-    if (cfg.sessions && cfg.sessions.length > 1) h += '<div class="sess" role="group" aria-label="Sessions">' + cfg.sessions.map(function(x){ return '<div>' + esc(x[0]) + '<small>' + esc(x[1]) + '</small></div>'; }).join('') + '</div>';
-    h += '</div></section><div class="gut"><div class="wrap">';
-    var tiles = cfg.tiles || [];
-    if (tiles.length || (ed && cfg.addForm)) h += '<section class="sec" aria-labelledby="t-h"><div class="sec-h"><h2 id="t-h">' + esc(cfg.tilesTitle) + '</h2></div><div class="tiles">' + tiles.join('') + (ed && cfg.addForm ? cfg.addForm : '') + '</div></section>';
-    if (cfg.facts) h += '<section class="sec" aria-labelledby="f-h"><div class="sec-h"><h2 id="f-h">' + esc(cfg.factsTitle) + '</h2></div><dl class="facts">' + cfg.facts.map(function(x){ return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd>'; }).join('') + '</dl></section>';
-    h += '</div></div><div class="foot gut"><div class="wrap">' + (ui.member ? 'Ergon · Taejae University' : 'Taejae University · shown with Ergon') + '</div></div>';
-    return h;
-  }
-
-  // The stage: a rotating show of what is inside, or, on a piece page, the piece itself with its player
+  // a visitor without sign-in starts the path at the showroom: they cannot go above it
+  var rootPath = function(r){ return sbUser ? [['Showrooms', '#home'], [r.name, '#s/' + r.key]] : [[r.name, '#s/' + r.key]]; };
   function stageHTML(cfg){
-    if (cfg.piece) {
-      var p = cfg.piece, bar;
-      if (p.type === 'video') bar = '<a href="' + esc(OPEN(p)) + '" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" width="16" height="16" fill="#111111" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg>Play</a><span class="note">opens in a new tab</span>';
-      else if (p.type === 'slides') bar = '<a href="' + esc(OPEN(p)) + '" target="_blank" rel="noopener">Present as a slideshow</a><span class="note">opens in Google Slides</span>';
-      else bar = '<a href="' + esc(OPEN(p)) + '" target="_blank" rel="noopener">Open</a><span class="note">opens in a new tab</span>';
-      return '<a class="shot" href="' + esc(OPEN(p)) + '" target="_blank" rel="noopener" aria-label="Open ' + esc(p.name) + '">' + visual(p) + (p.type === 'video' ? playIcon : '') + '</a>' +
-        '<div class="pbar">' + bar + '</div>' +
-        '<div class="cap"><span><b>' + esc(p.part) + '</b> · ' + esc(p.src) + '</span><span><a href="' + esc(SOURCE(p)) + '" target="_blank" rel="noopener" style="color:var(--tone-fg);text-underline-offset:3px">' + (p.type === 'slides' ? 'Open in Google Slides ↗' : 'Open the original ↗') + '</a></span></div>';
-    }
     var s = cfg.stage;
-    if (!s.length) return '<span class="shot"><span class="ph"><small>Nothing on show yet</small><b>' + esc(cfg.name) + '</b></span></span>';
-    var n = s.length, k = rot % n, it = s[k];
-    return '<a class="shot" href="#' + it.href + '" aria-label="Open ' + esc(it.title) + '">' + visual(it.p) + (it.p.type === 'video' ? playIcon : '') + '</a>' +
-      '<div class="cap"><span><b>' + esc(it.title) + '</b> · ' + esc(it.sub) + '</span><span>' + (k + 1) + ' / ' + n + '</span></div>';
+    if (!s.length) return '<span class="shot"><span class="ph"><small>' + esc(cfg.empty) + '</small><b>' + esc(cfg.name) + '</b></span></span>';
+    var k = rot % s.length, it = s[k];
+    return '<a class="shot" href="#p/' + it.p.key + '" aria-label="Open ' + esc(it.p.name) + '">' + visual(it.p) + (it.p.type === 'video' ? playIcon : '') + '</a>' +
+      '<div class="cap"><span><b>' + esc(it.p.name) + '</b> · ' + esc(it.sub) + '</span><span>' + (k + 1) + ' / ' + s.length + '</span></div>';
+  }
+  function page(cfg){
+    var h = '<section class="poster gut" style="--tone:' + cfg.tone + '" aria-label="' + esc(cfg.name) + '"><div class="wrap">' + crumb(cfg.path, cfg.sib) +
+      '<div class="pgrid"><div class="id"><div class="state"><span class="chip" style="background:' + chipBg(cfg.state) + '">' + cfg.state + '</span><span>' + esc(cfg.when) + '</span></div>' +
+      '<div class="ctx">' + esc(cfg.ctx) + '</div><h1>' + esc(cfg.name) + '</h1>' + (cfg.prog ? '<div class="prog">' + esc(cfg.prog) + '</div>' : '') +
+      '<dl class="idl">' + cfg.dl.map(function(x){ return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd>'; }).join('') + '</dl>' +
+      '</div><div class="stage" id="stage">' + stageHTML(cfg) + '</div></div>';
+    if (cfg.sessions && cfg.sessions.length > 1) h += '<div class="sess" role="group" aria-label="Sessions">' + cfg.sessions.map(function(s){ var st = stateOf(s); return '<div class="' + (s === cfg.lead ? 'on' : '') + '">' + esc(s.name) + '<small>' + esc(s.when) + (st === 'On stage' ? ' · on stage' : st === 'Past' ? ' · past' : '') + '</small></div>'; }).join('') + '</div>';
+    h += '</div></section><div class="gut"><div class="wrap">';
+    h += '<section class="sec" aria-labelledby="t-h"><div class="sec-h"><h2 id="t-h">' + esc(cfg.tilesTitle) + '</h2></div>' + (cfg.tiles.length ? '<div class="tiles">' + cfg.tiles.join('') + '</div>' : '<div class="empty">' + esc(cfg.noTiles) + '</div>') + '</section>';
+    h += '<section class="sec" aria-labelledby="f-h"><div class="sec-h"><h2 id="f-h">' + esc(cfg.factsTitle) + '</h2></div><dl class="facts">' + cfg.facts.map(function(x){ return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd>'; }).join('') + '</dl></section>';
+    return h + '</div></div>' + foot();
+  }
+  function pieceTile(p){
+    return '<a class="tile" href="#p/' + p.key + '"><span class="one">' + visual(p) + (p.type === 'video' ? playIcon : '') + '</span>' +
+      '<span class="row"><span>' + esc(p.part) + '</span><span>' + (p.type === 'video' ? 'Video' : 'Google Slides') + '</span></span><span class="t">' + esc(p.name) + '</span><span class="s">' + esc(p.src) + '</span></a>';
+  }
+  function showroomCfg(r){
+    var s = lead(r), st = stateOf(s);
+    return { tone: r.tone, path: sbUser ? [['Showrooms', '#home'], [r.name, null]] : [[r.name, null]], state: st, when: r.sessions.length > 1 ? s.name + ' · ' + s.when : s.when, ctx: r.ctx, name: r.name,
+      prog: r.progress[st] || '', dl: [['Host', r.host], ['Booths', plural(r.booths.length, 'booth')]], sessions: r.sessions, lead: s,
+      stage: allPieces(r).map(function(x){ return { p: x.p, sub: x.b.label + ' · ' + x.p.part }; }), empty: r.booths.length ? 'Nothing sent yet' : 'Booths appear here as teams send work',
+      tilesTitle: 'Booths', noTiles: 'Booths appear here as teams send work', facts: r.facts, factsTitle: 'About this showroom',
+      tiles: r.booths.map(function(b){
+        var n = b.pieces.length, bs = b.from ? boothState(r, b) : null;
+        return '<a class="tile" href="#b/' + b.key + '"><span class="minis">' + (n ? b.pieces.slice(0, 3).map(visual).join('') : '<span class="ph"></span><span class="ph"></span><span class="ph"></span>') + '</span>' +
+          '<span class="row"><span>' + esc(b.label) + (b.when ? ' · ' + esc(b.when) : '') + '</span><span>' + plural(n, 'piece') + '</span></span><span class="t">' + esc(b.name) + '</span>' +
+          '<span class="s">' + (bs === 'On stage' ? 'On stage now' : bs === 'Past' ? 'Shown ' + esc(b.when) : bs ? 'Starts ' + esc(String(b.when).split('–')[0]) : n ? '' : 'Nothing sent yet') + '</span></a>';
+      }) };
+  }
+  function boothCfg(r, b, j){
+    var n = r.booths.length, prev = r.booths[(j - 1 + n) % n], next = r.booths[(j + 1) % n], s = lead(r);
+    return { tone: r.tone, path: rootPath(r).concat([[b.label + ' · ' + b.name, null]]),
+      sib: n > 1 ? { prev: ['#b/' + prev.key, prev.label], next: ['#b/' + next.key, next.label], pos: (j + 1) + ' / ' + n } : null,
+      state: boothState(r, b), when: b.when || (r.sessions.length > 1 ? s.name + ' · ' + s.when : s.when), ctx: b.label, name: b.name, prog: b.prog,
+      dl: b.people.concat([['Pieces', plural(b.pieces.length, 'piece')]]),
+      stage: b.pieces.map(function(p){ return { p: p, sub: p.part }; }), empty: 'Nothing sent yet',
+      tilesTitle: 'Pieces', noTiles: 'Nothing sent yet', tiles: b.pieces.map(pieceTile),
+      factsTitle: 'About this booth', facts: [['Showroom', r.name]].concat(b.when ? [['When', b.when]] : []) };
+  }
+  function leafHTML(r, b, p, k){
+    var n = b.pieces.length, path = rootPath(r);
+    if (n > 1) path.push([b.label + ' · ' + b.name, '#b/' + b.key]);
+    path.push([n > 1 ? String(p.part).split(' · ')[0] : b.label + ' · ' + b.name, null]);
+    var sib = n > 1 ? { prev: ['#p/' + b.pieces[(k - 1 + n) % n].key, String(b.pieces[(k - 1 + n) % n].part).split(' · ')[0]], next: ['#p/' + b.pieces[(k + 1) % n].key, String(b.pieces[(k + 1) % n].part).split(' · ')[0]], pos: (k + 1) + ' / ' + n } : null;
+    var st = boothState(r, b);
+    var h = '<section class="poster band gut" style="--tone:' + r.tone + '" aria-label="' + esc(p.name) + '"><div class="wrap">' + crumb(path, sib) +
+      '<div class="brow"><div class="state"><span class="chip" style="background:' + chipBg(st) + '">' + st + '</span><span>' + esc(b.when || '') + '</span></div>' +
+      '<div class="bt"><span class="ctx">' + esc(p.part) + '</span><h1>' + esc(p.name) + '</h1></div>' +
+      '<div class="acts"><a class="go" href="' + OPEN(p) + '" target="_blank" rel="noopener">' + (p.type === 'video' ? 'Open in Google Drive' : 'Present as a slideshow') + '</a><a class="src" href="' + SOURCE(p) + '" target="_blank" rel="noopener">' + (p.type === 'slides' ? 'Google Slides ↗' : 'Original ↗') + '</a></div></div></div></section>' +
+      '<div class="full"><iframe src="' + EMBED(p) + '" title="' + esc(p.name) + '" allow="autoplay; fullscreen" allowfullscreen></iframe></div><div class="gut"><div class="wrap">';
+    if (n > 1) h += '<section class="sec" aria-labelledby="t-h"><div class="sec-h"><h2 id="t-h">Also in ' + esc(b.label) + '</h2></div><div class="tiles">' + b.pieces.filter(function(x){ return x !== p; }).map(pieceTile).join('') + '</div></section>';
+    h += '<section class="sec" aria-labelledby="f-h"><div class="sec-h"><h2 id="f-h">About this piece</h2></div><dl class="facts"><dt>Source</dt><dd>' + esc(p.src) + '</dd><dt>Booth</dt><dd>' + esc(b.label + ' · ' + b.name) + '</dd><dt>Showroom</dt><dd>' + esc(r.name) + '</dd><dt>Lecturer</dt><dd>' + esc((b.people[0] || [])[1] || r.host) + '</dd></dl></section>';
+    return h + '</div></div>' + foot();
   }
 
-  function tileWrap(key, parentKey, inner, hidden){
-    if (!ui.editing) return inner;
-    return '<div class="tbox' + (hidden ? ' off' : '') + '">' + inner + '<div class="tctl"><button type="button" data-act="move" data-key="' + key + '" data-parent="' + parentKey + '" data-dir="-1" aria-label="Move earlier">←</button><button type="button" data-act="move" data-key="' + key + '" data-parent="' + parentKey + '" data-dir="1" aria-label="Move later">→</button><button type="button" data-act="hide" data-key="' + key + '">' + (hidden ? 'Show' : 'Hide') + '</button>' + (hidden ? '<span class="hid">Hidden from visitors</span>' : '') + '</div></div>';
-  }
-  function pieceTile(p, b){
-    return tileWrap(p.key, b.key, '<a class="tile" href="#' + p.key + '"><span class="one">' + visual(p) + (p.type === 'video' ? playIcon : '') + '</span>' +
-      '<span class="row"><span>' + esc(p.part) + '</span><span>' + esc(typeName(p.type)) + '</span></span><span class="t">' + esc(p.name) + '</span><span class="s">' + esc(p.src) + '</span></a>', p.hidden);
-  }
-  var stageOf = function(p, b){ return { title: p.name, sub: (b ? b.label + ' · ' : '') + p.part, p: p, href: p.key }; };
-  var addPieceForm = function(bk){ return '<form class="add" data-form="piece" data-booth="' + bk + '"><b style="font-weight:600">Add a piece</b>' +
-    '<label for="ap-link">Link (Google Slides, Drive, YouTube …)<input id="ap-link" name="link" type="url" required placeholder="https://"></label>' +
-    '<label for="ap-name">Title<input id="ap-name" name="name" required></label>' +
-    '<label for="ap-part">Label<input id="ap-part" name="part" placeholder="Lesson 4 · video"></label>' +
-    '<label for="ap-type">Type<select id="ap-type" name="type"><option value="auto">Detect from the link</option><option value="video">Video</option><option value="slides">Slides</option><option value="link">Other link</option></select></label>' +
-    '<button type="submit">Add piece</button></form>'; };
-  var addBoothForm = '<form class="add" data-form="booth"><b style="font-weight:600">Add a booth</b>' +
-    '<label for="ab-label">Label<input id="ab-label" name="label" required placeholder="Week 3"></label>' +
-    '<label for="ab-name">Title<input id="ab-name" name="name" required></label>' +
-    '<label for="ab-when">When<input id="ab-when" name="when" placeholder="Nov 9–13"></label>' +
-    '<button type="submit">Add booth</button></form>';
-
-  function showroomCfg(){
-    var R = M.room, st = stateOf(R.from, R.to), stage = [];
-    M.booths.forEach(function(b){ if (!b.hidden) b.pieces.forEach(function(p){ if (!p.hidden) stage.push(stageOf(p, b)); }); });
-    return { key: 'showroom', crumb: { path: [[R.name, null]] }, state: st, when: R.when, ctx: R.ctx, name: R.name,
-      prog: R.prog || (st === 'On stage' ? 'Lessons open · participants and parents invited' : st === 'Past' ? 'Recordings and slides stay open' : 'Opens Oct 26'),
-      dl: [['Host', '곽지영 교수'], ['Booths', plural(M.booths.filter(function(b){ return !b.hidden; }).length, 'booth')]], stage: stage, sessions: [['특강 기간', R.when]],
-      tilesTitle: 'Booths', addForm: addBoothForm, tiles: M.booths.map(function(b){
-        var s = stateOf(b.from, b.to), vis = b.pieces.filter(function(p){ return !p.hidden; });
-        return tileWrap(b.key, 'showroom', '<a class="tile" href="#' + b.key + '"><span class="minis">' + (vis.length ? vis.slice(0, 3).map(visual).join('') : '<span class="ph"><small>Empty</small><b>' + esc(b.name) + '</b></span>') + '</span>' +
-          '<span class="row"><span>' + esc(b.label) + ' · ' + esc(b.when) + '</span><span>' + plural(vis.length, 'piece') + '</span></span><span class="t">' + esc(b.name) + '</span>' +
-          '<span class="s">' + (s === 'On stage' ? 'On stage now' : s === 'Past' ? 'Shown ' + esc(b.when) : 'Starts ' + esc(String(b.when).split('–')[0])) + '</span></a>', b.hidden);
-      }),
-      factsTitle: 'About this showroom',
-      facts: [['What', '고교생 대상 뇌과학 아카데미의 Data Science & AI 특강. 뇌를 모방한 신경망에서 언어 모델까지, 두 주 동안 여섯 차시.'], ['Booths', 'One per week · lecture videos and slides'], ['Audience', 'Anyone with the link'], ['Pieces open in', 'Google Drive for videos · Google Slides for slide decks']] };
-  }
-
-  function boothCfg(key){
-    var r = findBooth(key), b = r.b, nB = M.booths.length, i = Math.max(0, r.i);
-    var crumb = { path: [[M.room.name, '#showroom'], [b.label + ' · ' + b.name, null]] };
-    if (nB > 1) { var prev = M.booths[(i - 1 + nB) % nB], next = M.booths[(i + 1) % nB]; crumb.prev = [prev.key, prev.label]; crumb.next = [next.key, next.label]; crumb.pos = (i + 1) + ' / ' + nB; }
-    return { key: b.key, crumb: crumb, state: stateOf(b.from, b.to), when: b.when, ctx: b.label, name: b.name, prog: b.prog || '',
-      dl: [['Lecturer', '곽지영 교수'], ['Pieces', plural(b.pieces.filter(function(p){ return !p.hidden; }).length, 'piece')]],
-      stage: b.pieces.filter(function(p){ return !p.hidden; }).map(function(p){ return stageOf(p); }), sessions: [['특강 기간', M.room.when]],
-      tilesTitle: 'Pieces', addForm: addPieceForm(b.key), tiles: b.pieces.map(function(p){ return pieceTile(p, b); }),
-      factsTitle: 'About this booth', facts: [['When', b.when], ['Showroom', M.room.name]] };
-  }
-
-  function pieceCfg(key){
-    var r = findPiece(key), b = r.b, p = r.p, list = b.pieces, n = list.length, j = Math.max(0, list.indexOf(p));
-    var crumb = n > 1
-      ? { path: [[M.room.name, '#showroom'], [b.label + ' · ' + b.name, '#' + b.key], [String(p.part).split(' · ')[0], null]], prev: [list[(j - 1 + n) % n].key, String(list[(j - 1 + n) % n].part).split(' · ')[0]], next: [list[(j + 1) % n].key, String(list[(j + 1) % n].part).split(' · ')[0]], pos: (j + 1) + ' / ' + n }
-      : { path: [[M.room.name, '#showroom'], [b.label + ' · ' + b.name, null]] };   // a single-piece booth opens straight on its piece, so the booth is this page
-    return { key: p.key, crumb: crumb, state: stateOf(b.from, b.to), when: b.when, ctx: p.part, name: p.name, prog: p.src,
-      dl: [['Lecturer', '곽지영 교수'], ['Booth', b.label + ' · ' + b.name]], piece: p, sessions: [['특강 기간', M.room.when]],
-      tilesTitle: 'Also in ' + b.label, tiles: n > 1 ? list.filter(function(x){ return x !== p; }).map(function(x){ return pieceTile(x, b); }) : [],
-      addForm: n > 1 ? null : addPieceForm(b.key),
-      factsTitle: 'About this piece', facts: [['Source', p.src], ['Booth', b.label + ' · ' + b.name], ['Lecturer', '곽지영 교수'], ['Opens in', p.type === 'slides' ? 'Google Slides, as a slideshow' : 'A new tab']] };
-  }
-
-  var app = document.getElementById('app');
-  function render(keepScroll){
-    M = model();
-    var v = location.hash.slice(1), fb = findBooth(v), fp = findPiece(v);
-    if (fb && fb.b.hidden && !ui.editing) fb = null;
-    if (fp && (fp.p.hidden || fp.b.hidden) && !ui.editing) fp = null;
-    current = fp ? pieceCfg(v) : fb ? (fb.b.pieces.length === 1 && !ui.editing ? pieceCfg(fb.b.pieces[0].key) : boothCfg(v)) : showroomCfg();
-    rot = 0;
-    header();
-    var y = window.scrollY;
-    app.innerHTML = page(current);
-    window.scrollTo(0, keepScroll ? y : 0);
-  }
-
-  // Editing: only the host sees these controls; Save republishes the page with the new state for everyone
-  function draft(){ var dft = ui.draft; dft.text = dft.text || {}; dft.hidden = dft.hidden || {}; dft.order = dft.order || {}; dft.addedPieces = dft.addedPieces || {}; dft.addedBooths = dft.addedBooths || []; return dft; }
-  function detect(link){ return /docs\.google\.com\/presentation/.test(link) ? 'slides' : /youtu\.?be|vimeo\.com|\.mp4(\?|$)/.test(link) ? 'video' : 'link'; }
-  function hostOf(link){ try { return new URL(link).hostname.replace(/^www\./, ''); } catch (e) { return 'Link'; } }
-  function documentHTML(state){
-    var css = document.getElementById('css').textContent, js = document.getElementById('app-js').textContent;
-    return SKEL + '\n<title>뇌과학 아카데미 특강</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Noto+Sans+KR:wght@300;400;500;700&display=swap">\n<style id="css">' + css + '</style>\n<header class="top gut" id="top"></header>\n<main id="app"></main>\n<script type="application/json" id="state">' + JSON.stringify(state).replace(/</g, '\\u003c') + '</scr' + 'ipt>\n<script id="app-js">' + js + '</scr' + 'ipt>\n</body></html>';
-  }
-  app.addEventListener('input', function(e){
-    var t = e.target; if (!ui.editing || !t.hasAttribute('data-key')) return;
-    var dft = draft(), k = t.getAttribute('data-key'); dft.text[k] = dft.text[k] || {}; dft.text[k][t.getAttribute('data-field')] = t.textContent.trim();
-  });
-  app.addEventListener('submit', function(e){
-    e.preventDefault(); var f = e.target, dft = draft(), fd = new FormData(f), id = Date.now().toString(36);
-    if (f.getAttribute('data-form') === 'piece') {
-      var link = String(fd.get('link') || '').trim(), type = fd.get('type') === 'auto' ? detect(link) : String(fd.get('type')), bk = f.getAttribute('data-booth');
-      (dft.addedPieces[bk] = dft.addedPieces[bk] || []).push({ key: 'p' + id, type: type, name: String(fd.get('name')).trim(), part: String(fd.get('part') || '').trim() || typeName(type), src: (type === 'slides' ? 'Google Slides' : hostOf(link)), link: link });
-    } else {
-      dft.addedBooths.push({ key: 'b' + id, label: String(fd.get('label')).trim(), name: String(fd.get('name')).trim(), when: String(fd.get('when') || '').trim() || BASE_ROOM.when, prog: '', pieces: [] });
+  // ── ROUTING: anything except a public showroom needs sign-in ──
+  var app = $('app');
+  function render(){
+    var hash = location.hash.slice(1), parts = hash.split('/'), kind = parts[0], key = parts[1], f = key ? find(kind, key) : null;
+    current = null; rot = 0;
+    if (!sbUser && !(f && f.room.isPublic)) { header(''); app.innerHTML = ''; showWall(true); return; }
+    showWall(false);
+    if (f && kind === 'p') { header('', f.room); app.innerHTML = leafHTML(f.room, f.booth, f.piece, f.k); document.title = f.piece.name + ' · Ergon'; }
+    else if (f && kind === 'b') {
+      if (f.booth.pieces.length === 1) { location.replace('#p/' + f.booth.pieces[0].key); return; }   // a single-piece booth opens on its piece
+      header('', f.room); current = boothCfg(f.room, f.booth, f.j); app.innerHTML = page(current); document.title = f.booth.name + ' · Ergon';
     }
-    ui.msg = 'Added · press Save to publish'; render(true);
-  });
+    else if (f && kind === 's') { header('', f.room); current = showroomCfg(f.room); app.innerHTML = page(current); document.title = f.room.name + ' · Ergon'; }
+    else { header(kind === 'studios' ? 'studios' : ''); app.innerHTML = homeHTML(); document.title = 'Ergon'; current = 'home';
+      if (kind === 'studios') { var el = $('studios-sec'); if (el) { el.scrollIntoView(); return; } } }
+    window.scrollTo(0, 0);
+  }
   app.addEventListener('click', function(e){
-    var t = e.target.closest('[data-act]'); if (!t) return;
-    var act = t.getAttribute('data-act');
-    if (act === 'edit') { ui.editing = true; ui.draft = clone(saved); ui.msg = ''; render(true); return; }
-    if (act === 'cancel') { ui.editing = false; ui.draft = null; ui.msg = ''; render(true); return; }
-    if (act === 'hide') { var dh = draft(), k = t.getAttribute('data-key'); if (dh.hidden[k]) delete dh.hidden[k]; else dh.hidden[k] = true; render(true); return; }
-    if (act === 'move') {
-      var dm = draft(), key = t.getAttribute('data-key'), parent = t.getAttribute('data-parent'), dir = +t.getAttribute('data-dir');
-      var list = parent === 'showroom' ? M.all.map(function(b){ return b.key; }) : findBooth(parent).b.all.map(function(p){ return p.key; });
-      var i = list.indexOf(key), j = i + dir; if (j < 0 || j >= list.length) return;
-      list.splice(i, 1); list.splice(j, 0, key); dm.order[parent] = list; render(true); return;
-    }
-    if (act === 'save') {
-      if (!ui.artifact) { ui.msg = 'Saving is not available in this view'; render(true); return; }
-      ui.msg = 'Saving…'; render(true);
-      ui.artifact.publish(documentHTML(ui.draft)).then(function(){ ui.msg = 'Saved'; }, function(err){
-        var c = err && err.code; ui.msg = c === 'conflict' ? 'Someone else saved first · the page reloads with their version' : c === 'not_granted' || c === 'not_writer' ? 'You can view this page but not save it' : 'Could not save · try again';
-        render(true);
-      });
-    }
+    var t = e.target.closest('[data-deck]'); if (!t) return;
+    deckIdx = +t.getAttribute('data-deck'); rot = 0; var y = window.scrollY; app.innerHTML = homeHTML(); window.scrollTo(0, y);
   });
-  window.addEventListener('hashchange', function(){ render(false); });
+  $('top').addEventListener('click', function(e){
+    if (e.target.closest('#me-btn')) { var m = $('me-menu'), open = m.hidden; m.hidden = !open; $('me-btn').setAttribute('aria-expanded', String(open)); return; }
+    var a = e.target.closest('[data-act]'); if (!a) return;
+    if (a.getAttribute('data-act') === 'out') signOut();
+    if (a.getAttribute('data-act') === 'pw') showPwWall('change');
+  });
+  document.addEventListener('click', function(e){ var m = $('me-menu'); if (m && !m.hidden && !e.target.closest('.me')) { m.hidden = true; $('me-btn').setAttribute('aria-expanded', 'false'); } });
+  window.addEventListener('hashchange', render);
   setInterval(function(){
-    var st = document.getElementById('stage');
-    if (!current || current.piece || !st || document.hidden || st.contains(document.activeElement) || !current.stage.length) return;
-    rot++; st.innerHTML = stageHTML(current);
+    if (document.hidden) return;
+    var st = $('stage');
+    if (current === 'home') { var foc = document.activeElement && document.activeElement.closest && document.activeElement.closest('.deck,.dots'); if (foc) return; rot++; var y = window.scrollY; app.innerHTML = homeHTML(); window.scrollTo(0, y); return; }
+    if (current && st && current.stage.length > 1 && !st.contains(document.activeElement)) { rot++; st.innerHTML = stageHTML(current); }
   }, 4000);
-  render(false);
 
-  // Who is looking: members of the host's organization get the Ergon header; the host also gets Edit
-  if (window.claude && window.claude.use) {
-    window.claude.use('user').then(function(user){
-      if (!user) return;
-      return Promise.all([user.me(), user.canEdit()]).then(function(r){
-        var me = r[0], can = r[1];
-        if (!me || !me.id) { ui.canEdit = !!can; return; }
-        return user.profiles(me.id).then(function(ps){ var pr = ps && ps[me.id]; ui.member = !(pr && pr.guest); ui.canEdit = !!can; });
-      });
-    }).then(function(){
-      if (!ui.canEdit) { render(true); return; }
-      return window.claude.use('artifact').then(function(a){ ui.artifact = a; render(true); });
-    }).catch(function(){});
+  // ── SESSION (same as Telos and TaeSylla) ──
+  // sessionStorage, not localStorage: a refresh keeps you signed in, closing the tab does not.
+  function saveSession(){ try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(sbUser)); } catch (e) {} }
+  function clearSession(){ try { sessionStorage.removeItem(SESSION_KEY); } catch (e) {} }
+  // Access tokens last about an hour: renew with the refresh token when one is nearly out.
+  var refreshing = null;
+  function sbFresh(){
+    var u = sbUser;
+    if (!u || !u.access_token) return Promise.resolve(false);
+    if (u.expires_at && u.expires_at * 1000 - Date.now() > 60000) return Promise.resolve(true);
+    if (!u.refresh_token) return Promise.resolve(false);
+    if (!refreshing) refreshing = fetch(SUPABASE_URL + '/auth/v1/token?grant_type=refresh_token', { method: 'POST', headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ refresh_token: u.refresh_token }) })
+      .then(function(r){ if (!r.ok) throw new Error('refresh failed'); return r.json(); })
+      .then(function(j){ sbUser = j; saveSession(); return true; })
+      .catch(function(){ return false; })
+      .then(function(ok){ refreshing = null; return ok; });
+    return refreshing;
   }
+  function authHeaders(){ return { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + sbUser.access_token, 'Content-Type': 'application/json' }; }
+  function showWall(on){ $('login-wall').hidden = !on; if (on) setTimeout(function(){ $('wall-email').focus(); }, 0); }
+  function toast(msg){ var t = $('toast'); t.textContent = msg; t.hidden = false; setTimeout(function(){ t.hidden = true; }, 2500); }
+
+  // After sign-in, or after a refresh that restored the session: the faculty profile decides the name and the first-sign-in password step
+  function enterApp(email){
+    var authEmail = String((sbUser.user && sbUser.user.email) || email).trim().toLowerCase();
+    return fetch(SUPABASE_URL + '/rest/v1/faculty_profiles?email=eq.' + encodeURIComponent(authEmail) + '&select=name_en,email,program,must_change_password', { headers: authHeaders() })
+      .then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; })
+      .then(function(rows){
+        var p = Array.isArray(rows) && rows[0];
+        PROFESSOR = { name: (p && p.name_en) || (sbUser.user && sbUser.user.user_metadata && sbUser.user.user_metadata.full_name) || authEmail.split('@')[0], email: authEmail };
+        render();
+        if (p && p.must_change_password === true) showPwWall('first');
+      });
+  }
+  $('login-form').addEventListener('submit', function(e){
+    e.preventDefault();
+    var email = $('wall-email').value.trim(), password = $('wall-password').value, err = $('wall-error'), btn = $('wall-submit');
+    if (loginLocked) return;
+    if (!email || !password) { err.textContent = 'Email and password are required.'; return; }
+    if (!/@taejae\.ac\.kr$/i.test(email)) { err.textContent = 'Please use your @taejae.ac.kr institutional email.'; return; }
+    btn.textContent = 'Signing in…'; btn.disabled = true; err.textContent = '';
+    fetch(SUPABASE_URL + '/auth/v1/token?grant_type=password', { method: 'POST', headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, password: password }) })
+      .then(function(r){ return r.json().then(function(data){ if (!r.ok) throw new Error(data.error_description || data.msg || 'Sign-in failed'); return data; }); })
+      .then(function(data){ sbUser = data; saveSession(); loginAttempts = 0; $('wall-password').value = ''; btn.textContent = 'Sign in'; btn.disabled = false; return enterApp(email); })
+      .catch(function(ex){
+        loginAttempts++;
+        if (loginAttempts >= 5) {
+          loginLocked = true; err.textContent = 'Too many failed attempts. Please wait 30 seconds.'; btn.disabled = true;
+          setTimeout(function(){ loginAttempts = 0; loginLocked = false; btn.disabled = false; btn.textContent = 'Sign in'; err.textContent = ''; }, 30000);
+        } else { err.textContent = ex.message; btn.textContent = 'Sign in'; btn.disabled = false; }
+      });
+  });
+  function showPwWall(mode){
+    $('pw-wall').dataset.mode = mode;
+    $('pw-title').textContent = mode === 'first' ? 'Set your password' : 'Change password';
+    $('pw-desc').textContent = mode === 'first' ? 'This is your first sign-in. Please set a new password to continue.' : 'Enter your new password below.';
+    $('pw-submit').textContent = mode === 'first' ? 'Set password & continue' : 'Update password';
+    $('pw-new').value = ''; $('pw-confirm').value = ''; $('pw-error').textContent = '';
+    $('pw-wall').hidden = false; $('pw-new').focus();
+  }
+  $('pw-form').addEventListener('submit', function(e){
+    e.preventDefault();
+    var p1 = $('pw-new').value, p2 = $('pw-confirm').value, err = $('pw-error'), btn = $('pw-submit'), mode = $('pw-wall').dataset.mode;
+    err.textContent = '';
+    if (p1.length < 8) { err.textContent = 'Password must be at least 8 characters.'; return; }
+    if (p1 !== p2) { err.textContent = 'Passwords do not match.'; return; }
+    btn.disabled = true; btn.textContent = 'Saving…';
+    sbFresh().then(function(){
+      return fetch(SUPABASE_URL + '/auth/v1/user', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ password: p1 }) });
+    }).then(function(r){
+      if (!r.ok) return r.json().then(function(j){ throw new Error(j.msg || j.message || 'Password change failed'); });
+      if (mode === 'first') return fetch(SUPABASE_URL + '/rest/v1/faculty_profiles?email=eq.' + encodeURIComponent(PROFESSOR.email), { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ must_change_password: false }) })
+        .then(function(pr){ if (!pr.ok) throw new Error('Profile update failed: ' + pr.status); });
+    }).then(function(){ $('pw-wall').hidden = true; btn.disabled = false; toast('Password saved'); })
+      .catch(function(ex){ err.textContent = ex.message; btn.disabled = false; btn.textContent = mode === 'first' ? 'Set password & continue' : 'Update password'; });
+  });
+  function signOut(){ sbUser = null; PROFESSOR = null; clearSession(); location.hash = '#home'; render(); }
+
+  // Start: restore a saved session, else show whatever needs no sign-in
+  var saved = null;
+  try { saved = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null'); } catch (e) { saved = null; }
+  if (saved && saved.access_token) {
+    sbUser = saved;
+    sbFresh().then(function(ok){ if (ok) return enterApp(''); sbUser = null; clearSession(); render(); });
+  } else render();
 })();
 </script>
-
 </body>
 </html>

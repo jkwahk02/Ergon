@@ -6,6 +6,7 @@
 <title>Ergon</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Noto+Sans+KR:wght@300;400;500;700&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js" defer></script>
 <style>
 /* Ergon for faculty. Home lists the showrooms (a carousel of what is live, then every showroom and studio).
    Every showroom, booth and piece uses one template: a poster in the showroom colour with a stage, tiles of what is inside, facts.
@@ -174,6 +175,23 @@ a.tile:hover .t{text-decoration:underline;text-underline-offset:3px}
 .facts dt{color:var(--muted)} .facts dd{margin:0}
 @media (max-width:640px){.facts{grid-template-columns:1fr;gap:2px}.facts dd{margin-bottom:12px}}
 .foot{padding-block:48px 72px;color:var(--muted);font-size:13px}
+/* invite: the host's one-click kit for a showroom (link, QR, invitation card) */
+.ibtn{margin-left:auto;min-height:36px;padding:0 14px;border:1px solid rgba(255,255,255,.6);background:transparent;color:var(--tone-fg);font-size:13px}
+.crumb .sib+.ibtn{margin-left:12px}
+dialog.inv{width:min(560px,calc(100vw - 32px));padding:0;border:none;background:var(--bg);color:var(--fg);box-shadow:0 0 0 1px var(--line),0 20px 60px rgba(0,0,0,.25)}
+dialog.inv::backdrop{background:rgba(10,12,18,.55)}
+.inv .ih{padding:22px 24px 16px;color:#FFFFFF}
+.inv .ih h2{font-weight:300;font-size:24px;margin-top:6px}
+.inv .ib{padding:20px 24px 24px;display:flex;flex-direction:column;gap:16px}
+.inv .row{display:flex;gap:8px}
+.inv input{flex:1;min-width:0;min-height:42px;padding:0 10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font-size:14px}
+.inv .qr{display:flex;align-items:center;gap:18px}
+.inv .qr canvas{width:132px;height:132px;flex:none;box-shadow:0 0 0 1px var(--line);background:#FFFFFF}
+.inv .qr p{margin:0;color:var(--muted);font-size:14px}
+.inv .btns{display:flex;flex-wrap:wrap;gap:8px}
+.inv button{min-height:42px;padding:0 16px;border:1px solid var(--fg);background:var(--bg);font-size:14px}
+.inv button.pri{background:var(--fg);color:var(--bg)}
+.inv .x{position:absolute;top:10px;right:10px;width:40px;height:40px;min-height:0;padding:0;border:none;background:transparent;color:#FFFFFF;font-size:20px}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:60;padding:10px 16px;background:var(--fg);color:var(--bg);font-size:14px}
 .toast[hidden]{display:none}
 @media (prefers-reduced-motion: reduce){.shot img{animation:none}.card{transition:none}}
@@ -208,6 +226,15 @@ a.tile:hover .t{text-decoration:underline;text-underline-offset:3px}
   </div>
 </div>
 <div class="toast" id="toast" role="status" hidden></div>
+<dialog class="inv" id="inv" aria-labelledby="inv-title">
+  <div class="ih" id="inv-head"><button type="button" class="x" data-inv="close" aria-label="Close">×</button><span class="lbl" style="color:rgba(255,255,255,.8)">Invite to</span><h2 id="inv-title"></h2></div>
+  <div class="ib">
+    <label for="inv-link" class="lbl">Invitation link</label>
+    <div class="row"><input id="inv-link" readonly><button type="button" data-inv="copy">Copy</button></div>
+    <div class="qr"><canvas id="inv-qr" width="264" height="264" aria-label="QR code for the invitation link" role="img"></canvas><p id="inv-note"></p></div>
+    <div class="btns"><button type="button" class="pri" data-inv="card">Download invitation (PNG)</button><button type="button" data-inv="qr">Download QR code</button></div>
+  </div>
+</dialog>
 
 <script>
 (function(){
@@ -343,12 +370,12 @@ a.tile:hover .t{text-decoration:underline;text-underline-offset:3px}
   }
 
   // ── THE ONE TEMPLATE FOR SHOWROOM, BOOTH AND PIECE ──
-  function crumb(path, sib){
+  function crumb(path, sib, tools){
     var h = '<div class="crumb"><nav class="path" aria-label="Path">';
     path.forEach(function(x, i){ if (i) h += '<span class="sep" aria-hidden="true">›</span>'; h += x[1] ? '<a href="' + x[1] + '">' + (i === 0 ? back : '') + esc(x[0]) + '</a>' : '<span aria-current="page">' + esc(x[0]) + '</span>'; });
     h += '</nav>';
     if (sib) h += '<span class="sib"><a href="' + sib.prev[0] + '">← ' + esc(sib.prev[1]) + '</a><span>' + sib.pos + '</span><a href="' + sib.next[0] + '">' + esc(sib.next[1]) + ' →</a></span>';
-    return h + '</div>';
+    return h + (tools || '') + '</div>';
   }
   // a visitor without sign-in starts the path at the showroom: they cannot go above it
   var rootPath = function(r){ return sbUser ? [['Showrooms', '#home'], [r.name, '#s/' + r.key]] : [[r.name, '#s/' + r.key]]; };
@@ -360,7 +387,7 @@ a.tile:hover .t{text-decoration:underline;text-underline-offset:3px}
       '<div class="cap"><span><b>' + esc(it.p.name) + '</b> · ' + esc(it.sub) + '</span><span>' + (k + 1) + ' / ' + s.length + '</span></div>';
   }
   function page(cfg){
-    var h = '<section class="poster gut" style="--tone:' + cfg.tone + '" aria-label="' + esc(cfg.name) + '"><div class="wrap">' + crumb(cfg.path, cfg.sib) +
+    var h = '<section class="poster gut" style="--tone:' + cfg.tone + '" aria-label="' + esc(cfg.name) + '"><div class="wrap">' + crumb(cfg.path, cfg.sib, cfg.invite && sbUser ? '<button type="button" class="ibtn" data-invite="' + cfg.invite + '">Invite</button>' : '') +
       '<div class="pgrid"><div class="id"><div class="state"><span class="chip" style="background:' + chipBg(cfg.state) + '">' + cfg.state + '</span><span>' + esc(cfg.when) + '</span></div>' +
       '<div class="ctx">' + esc(cfg.ctx) + '</div><h1>' + esc(cfg.name) + '</h1>' + (cfg.prog ? '<div class="prog">' + esc(cfg.prog) + '</div>' : '') +
       '<dl class="idl">' + cfg.dl.map(function(x){ return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd>'; }).join('') + '</dl>' +
@@ -377,7 +404,7 @@ a.tile:hover .t{text-decoration:underline;text-underline-offset:3px}
   }
   function showroomCfg(r){
     var s = lead(r), st = stateOf(s);
-    return { tone: r.tone, path: sbUser ? [['Showrooms', '#home'], [r.name, null]] : [[r.name, null]], state: st, when: r.sessions.length > 1 ? s.name + ' · ' + s.when : s.when, ctx: r.ctx, name: r.name,
+    return { invite: r.key, tone: r.tone, path: sbUser ? [['Showrooms', '#home'], [r.name, null]] : [[r.name, null]], state: st, when: r.sessions.length > 1 ? s.name + ' · ' + s.when : s.when, ctx: r.ctx, name: r.name,
       prog: r.progress[st] || '', dl: [['Host', r.host], ['Booths', plural(r.booths.length, 'booth')]], sessions: r.sessions, lead: s,
       stage: allPieces(r).map(function(x){ return { p: x.p, sub: x.b.label + ' · ' + x.p.part }; }), empty: r.booths.length ? 'Nothing sent yet' : 'Booths appear here as teams send work',
       tilesTitle: 'Booths', noTiles: 'Booths appear here as teams send work', facts: r.facts, factsTitle: 'About this showroom',
@@ -510,6 +537,66 @@ a.tile:hover .t{text-decoration:underline;text-underline-offset:3px}
     if (current === 'home') { var c = liveRooms()[deckIdx], cs = document.querySelector('[data-stage="' + deckIdx + '"]'); if (c && cs && !cs.contains(document.activeElement)) { rot++; cs.innerHTML = cardStage(c); } return; }
     if (current && st && current.stage.length > 1 && !st.contains(document.activeElement)) { rot++; st.innerHTML = stageHTML(current); }
   }, 4000);
+
+  // ── INVITE: link, QR code and a printable invitation card, one click each ──
+  var invRoom = null;
+  var inviteURL = function(r){ return location.origin + location.pathname + '#s/' + r.key; };
+  function qrModules(text){ if (!window.qrcode) return null; var q = window.qrcode(0, 'M'); q.addData(text); q.make(); return q; }
+  function drawQR(ctx, q, x, y, size){
+    var n = q.getModuleCount(), cell = size / (n + 8);
+    ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x, y, size, size); ctx.fillStyle = '#111111';
+    for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (q.isDark(r, c)) ctx.fillRect(Math.round(x + (c + 4) * cell), Math.round(y + (r + 4) * cell), Math.ceil(cell), Math.ceil(cell));
+  }
+  function wrapText(ctx, text, x, y, maxW, lh){
+    var words = String(text).split(' '), line = '', lines = [];
+    words.forEach(function(w){ var t = line ? line + ' ' + w : w; if (ctx.measureText(t).width > maxW && line) { lines.push(line); line = w; } else line = t; });
+    if (line) lines.push(line);
+    lines.forEach(function(l, i){ ctx.fillText(l, x, y + i * lh); });
+    return y + lines.length * lh;
+  }
+  function saveCanvas(cv, name){
+    cv.toBlob(function(b){ var a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1000); }, 'image/png');
+  }
+  function openInvite(key){
+    var f = find('s', key); if (!f) return; var r = invRoom = f.room, url = inviteURL(r), s = lead(r);
+    $('inv-head').style.background = r.tone; $('inv-title').textContent = r.name; $('inv-link').value = url;
+    $('inv-note').textContent = r.isPublic ? 'Anyone with the link can open this showroom. No sign-in needed.' : 'Invitees sign in with a Taejae account to open it.';
+    var q = qrModules(url), cv = $('inv-qr'), ctx = cv.getContext('2d');
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    if (q) drawQR(ctx, q, 0, 0, cv.width); else $('inv-note').textContent = 'The QR code could not load. Copy the link instead.';
+    $('inv').showModal();
+  }
+  function invitationCard(r){
+    var W = 1240, H = 1754, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    var ctx = cv.getContext('2d'), s = lead(r), url = inviteURL(r), q = qrModules(url), font = '"Noto Sans KR","Inter",sans-serif';
+    ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = r.tone; ctx.fillRect(0, 0, W, 860);
+    ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.font = '500 34px ' + font; ctx.fillText('태재대학교 · Taejae University', 96, 140);
+    ctx.fillStyle = '#FFFFFF'; ctx.font = '500 38px ' + font; wrapText(ctx, r.ctx, 96, 300, W - 192, 52);
+    ctx.font = '300 104px ' + font; var y = wrapText(ctx, r.name, 96, 450, W - 192, 120);
+    ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.font = '400 40px ' + font; ctx.fillText((r.sessions.length > 1 ? s.name + ' · ' : '') + s.when, 96, Math.max(y + 40, 700));
+    ctx.fillText('Host · ' + r.host, 96, Math.max(y + 100, 760));
+    if (q) drawQR(ctx, q, 96, 960, 520);
+    ctx.fillStyle = '#111111'; ctx.font = '500 44px ' + font; ctx.fillText('Scan to visit', 680, 1060);
+    ctx.fillStyle = '#5E6068'; ctx.font = '400 32px ' + font; wrapText(ctx, r.isPublic ? 'Open to anyone with the link' : 'Sign in with a Taejae account', 680, 1120, 470, 44);
+    ctx.font = '400 26px ' + font; ctx.fillText(url.replace(/^https?:\/\//, ''), 680, 1260);
+    ctx.fillStyle = '#5E6068'; ctx.font = '400 28px ' + font; ctx.fillText('Ergon · Taejae University', 96, H - 90);
+    return cv;
+  }
+  app.addEventListener('click', function(e){ var t = e.target.closest('[data-invite]'); if (t) openInvite(t.getAttribute('data-invite')); });
+  $('inv').addEventListener('click', function(e){
+    if (e.target === $('inv')) { $('inv').close(); return; }
+    var t = e.target.closest('[data-inv]'); if (!t || !invRoom) return;
+    var act = t.getAttribute('data-inv'), slug = invRoom.key;
+    if (act === 'close') $('inv').close();
+    if (act === 'copy') {
+      var done = function(){ toast('Link copied'); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText($('inv-link').value).then(done, function(){ $('inv-link').select(); });
+      else { $('inv-link').select(); }
+    }
+    if (act === 'qr') { var q = qrModules(inviteURL(invRoom)); if (!q) return; var cv = document.createElement('canvas'); cv.width = cv.height = 1024; drawQR(cv.getContext('2d'), q, 0, 0, 1024); saveCanvas(cv, 'ergon-' + slug + '-qr.png'); }
+    if (act === 'card') { var go = function(){ saveCanvas(invitationCard(invRoom), 'ergon-' + slug + '-invitation.png'); }; if (document.fonts && document.fonts.load) Promise.all([document.fonts.load('300 104px "Noto Sans KR"'), document.fonts.load('500 44px "Noto Sans KR"')]).then(go, go); else go(); }
+  });
 
   // ── SESSION (same as Telos and TaeSylla) ──
   // sessionStorage, not localStorage: a refresh keeps you signed in, closing the tab does not.

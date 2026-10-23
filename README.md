@@ -25,4 +25,4 @@ Same as Telos and TaeSylla: a Taejae faculty email (`@taejae.ac.kr`) and passwor
 
 ## Running it
 
-Open `index.html` in a browser, or serve the folder with any static host. For visitors to see the lectures, the Drive files must be shared as "Anyone with the link · Viewer". The repository is private for now; switch it to public and turn on GitHub Pages when the academy opens.
+Open `index.html` in a browser, or serve the folder with any static host. For visitors to see the lectures, the Drive files must be shared as "Anyone with the link · Viewer". It is published with GitHub Pages at https://jkwahk02.github.io/Ergon/ (the academy showroom: https://jkwahk02.github.io/Ergon/#s/brain).

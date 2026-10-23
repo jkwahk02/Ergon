@@ -176,6 +176,7 @@ a.tile:hover .t{text-decoration:underline;text-underline-offset:3px}
 .rtile .rm{margin-top:10px;font-size:13px;opacity:.9}
 .newtile{display:flex;align-items:center;justify-content:center;aspect-ratio:16/9;box-shadow:inset 0 0 0 1px var(--line);font-weight:300;font-size:32px;color:var(--muted)}
 .empty{padding:28px 0;color:var(--muted)}
+.gatebtn{min-height:46px;padding:0 20px;border:none;background:#FFFFFF;color:#111111;font-size:15px;font-weight:500}
 .hadd{min-height:36px;padding:0 4px;border:none;background:transparent;font-size:14px;color:var(--fg);text-decoration:underline;text-underline-offset:3px}
 .group{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:28px 0 16px}
 .group b{font-size:18px;font-weight:500}
@@ -197,6 +198,13 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
 .inv .qr canvas{width:132px;height:132px;flex:none;box-shadow:0 0 0 1px var(--line);background:#FFFFFF}
 .inv .qr p{margin:0;color:var(--muted);font-size:14px}
 .inv .btns{display:flex;flex-wrap:wrap;gap:8px}
+.inv .aud{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.inv .aud label{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid var(--line);cursor:pointer;font-size:14px;font-weight:500}
+.inv .aud label:has(input:checked){border-color:var(--fg);box-shadow:inset 0 0 0 1px var(--fg)}
+.inv .aud input{position:absolute;opacity:0;pointer-events:none}
+.inv .aud label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.inv .aud small{font-weight:400;font-size:12px;color:var(--muted)}
+@media (max-width:520px){.inv .aud{grid-template-columns:1fr}}
 .inv button{min-height:42px;padding:0 16px;border:1px solid var(--fg);background:var(--bg);font-size:14px}
 .inv button.pri{background:var(--fg);color:var(--bg)}
 .inv .x{position:absolute;top:10px;right:10px;width:40px;height:40px;min-height:0;padding:0;border:none;background:transparent;color:#FFFFFF;font-size:20px}
@@ -212,13 +220,13 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
 <!-- SIGN-IN (same as TaeSylla and Telos: Taejae faculty email and password, shared Supabase project) -->
 <div class="wall" id="login-wall" hidden>
   <div class="wcard">
-    <div class="wh"><span class="brand">Ergon</span><h2>Sign in</h2><p>Use your Taejae faculty email to sign in</p></div>
+    <div class="wh"><span class="brand">Ergon</span><h2>Sign in</h2><p id="wall-sub">Use your Taejae faculty email to sign in</p></div>
     <form id="login-form" novalidate>
       <label for="wall-email">Email<input id="wall-email" type="email" autocomplete="username" placeholder="your@taejae.ac.kr" required></label>
       <label for="wall-password">Password<input id="wall-password" type="password" autocomplete="current-password" required></label>
       <div class="err" id="wall-error" role="alert"></div>
       <button type="submit" id="wall-submit">Sign in</button>
-      <div class="alt" id="wall-alt"></div>
+      <div class="alt" id="wall-alt"><button type="button" id="wall-cancel" style="border:none;background:transparent;padding:0;color:var(--muted);text-decoration:underline;text-underline-offset:3px;font-size:13px" hidden>Not now</button></div>
     </form>
   </div>
 </div>
@@ -237,6 +245,12 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
 <dialog class="inv" id="inv" aria-labelledby="inv-title">
   <div class="ih" id="inv-head"><button type="button" class="x" data-inv="close" aria-label="Close">×</button><span class="lbl" style="color:rgba(255,255,255,.8)">Invite to</span><h2 id="inv-title"></h2></div>
   <div class="ib">
+    <fieldset style="border:none;margin:0;padding:0"><legend class="lbl" style="padding:0;margin-bottom:8px">Who can open it</legend>
+      <div class="aud" role="radiogroup">
+        <label><input type="radio" name="inv-aud" value="public"> Public<small>Anyone with the link, no sign-in</small></label>
+        <label><input type="radio" name="inv-aud" value="taejae"> Taejae<small>Anyone at Taejae, after sign-in</small></label>
+        <label><input type="radio" name="inv-aud" value="class"> Class<small id="inv-class-sub">Class members, after sign-in</small></label>
+      </div></fieldset>
     <label for="inv-link" class="lbl">Invitation link</label>
     <div class="row"><input id="inv-link" readonly><button type="button" data-inv="copy">Copy</button></div>
     <div class="qr"><canvas id="inv-qr" width="264" height="264" aria-label="QR code for the invitation link" role="img"></canvas><p id="inv-note"></p></div>
@@ -263,9 +277,9 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
   // ── DATA: the faculty member's showrooms and studios ──
   var DA321_TEAMS = ['Vietnam’s Climate-Tech Ecosystem', 'Korea in East Asian Ceramics', 'Spatial Audio from Natural Language', 'Accessible Bladder Data Visualization', 'Income Distribution and Household Consumption in China', 'Global Brands’ Marketing Across Markets', 'K-pop Comeback Success', 'Seoul Scout', 'The Searcher’s Workbench'];
   var ROOMS = [
-    { key: 'brain', name: '뇌과학 아카데미 특강', ctx: 'Data Science & AI · for high-school students', tone: '#16233F', host: '곽지영 교수', isPublic: true,
+    { key: 'brain', name: '뇌과학 아카데미 특강', ctx: 'Data Science & AI · for high-school students', tone: '#16233F', host: '곽지영 교수', audience: 'public',
       sessions: [{ name: '특강 기간', when: 'Oct 26 – Nov 6, 2026', open: d('2026-10-19'), from: d('2026-10-26'), to: d('2026-11-07') }],
-      facts: [['What', '고교생 대상 뇌과학 아카데미의 Data Science & AI 특강. 뇌를 모방한 신경망에서 언어 모델까지, 두 주 동안 여섯 차시.'], ['Booths', 'One per week · lecture videos and slides'], ['Audience', 'Anyone with the link, no sign-in needed'], ['Pieces play in', 'Google Drive for videos · Google Slides for decks']],
+      facts: [['What', '고교생 대상 뇌과학 아카데미의 Data Science & AI 특강. 뇌를 모방한 신경망에서 언어 모델까지, 두 주 동안 여섯 차시.'], ['Booths', 'One per week · lecture videos and slides'], ['Audience', 'Anyone with the link, no sign-in needed (unless an invitation says otherwise)'], ['Pieces play in', 'Google Drive for videos · Google Slides for decks']],
       progress: { 'On stage': 'Lessons open · participants and parents invited', 'Open': 'Lessons ready · opens Oct 26', 'Coming soon': 'Opens Oct 26', 'Past': 'Recordings and slides stay open' },
       booths: [
         { key: 'brain-w1', label: 'Week 1', name: 'AI는 어떻게 학습하는가', when: 'Oct 26–30', from: d('2026-10-26'), to: d('2026-10-31'), people: [['Lecturer', '곽지영 교수']],
@@ -282,7 +296,7 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
             { key: 'w2s', type: 'slides', name: 'AI는 어떻게 대화하는가', part: 'Slides · all three lessons', src: 'Google Slides', img: 'img/w2-slides.png', id: '1UvkCOd2Mv8MSArCVtBUtIsDVLj1XdqIbA8EtVxIbGJg' }
           ] }
       ] },
-    { key: 'da321', name: 'Project Demo and Presentation', ctx: 'DA321 Data Analytics and Visualization · Fall 2026', tone: '#123B37', host: '곽지영 교수',
+    { key: 'da321', name: 'Project Demo and Presentation', ctx: 'DA321 Data Analytics and Visualization · Fall 2026', tone: '#123B37', host: '곽지영 교수', audience: 'class', course: 'DA321', roster: [],
       sessions: [
         { name: 'EDA workshop', when: 'Oct 5 & 7', open: d('2026-09-28'), from: d('2026-10-05'), to: d('2026-10-08') },
         { name: 'Data-analytics case study', when: 'Nov 2', open: d('2026-10-12'), from: d('2026-11-02'), to: d('2026-11-03') },
@@ -292,7 +306,7 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
       facts: [['Booths', 'One per DA321 team, sent from its studio'], ['Audience', 'Class at every session · outside guests at Demo Day'], ['Reactions', 'Comments · audience vote at Demo Day'], ['In this version', 'Team work is not connected yet']],
       progress: { 'On stage': 'Appraisal open', 'Open': 'Teams are sending work', 'Coming soon': 'Opens for work soon', 'Past': 'All sessions shown' },
       booths: DA321_TEAMS.map(function(t, i){ return { key: 'da321-t' + (i + 1), label: 'Team ' + (i + 1), name: t, people: [['Team', 'Team ' + (i + 1)]], prog: '', pieces: [] }; }) },
-    { key: 'airshow', name: 'AIRshow', ctx: 'AIR Project · Fall 2026', tone: '#3A2A12', host: 'AIR Project',
+    { key: 'airshow', name: 'AIRshow', ctx: 'AIR Project · Fall 2026', tone: '#3A2A12', host: 'AIR Project', audience: 'taejae',
       sessions: [{ name: 'Showcase', when: '[DATE]', open: d('2099-01-01'), from: d('2099-01-01'), to: d('2099-01-02') }],
       facts: [['What', 'Advanced Independent Research: student teams define their own questions and build their own answers'], ['Booths', 'AIR teams, by open call'], ['Audience', 'Taejae community'], ['Awards', 'Innovative Research and Real-world Impact (faculty committee) · Outstanding Presentation (community vote)']],
       progress: { 'Coming soon': 'Booths by open call' },
@@ -320,6 +334,18 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
     var shown = cells.slice(0, 3), extra = cells.length - shown.length;
     return '<span class="minis m' + shown.length + '">' + shown.map(function(c, i){ return '<span class="cell">' + c + (extra && i === shown.length - 1 ? '<span class="more">+' + extra + '</span>' : '') + '</span>'; }).join('') + '</span>';
   }
+  // Who a showroom is for. An invitation link may narrow or widen it for whoever arrives through it (kept for this tab).
+  // This version checks it in the page; the showroom settings table will hold it once Ergon has its own tables.
+  var AUD = { public: 'Anyone with the link', taejae: 'Taejae members', class: 'The class' };
+  function audienceOf(r){ var a = null; try { a = sessionStorage.getItem('ergon_aud_' + r.key); } catch (e) {} return AUD[a] ? a : (r.audience || 'taejae'); }
+  function canView(r){
+    var a = audienceOf(r);
+    if (a === 'public') return true;
+    if (!sbUser) return false;
+    if (a === 'class' && r.roster && r.roster.length) return r.roster.indexOf(String(PROFESSOR && PROFESSOR.email).toLowerCase()) >= 0 || (PROFESSOR && PROFESSOR.name && r.host.indexOf(PROFESSOR.name) >= 0);
+    return true;
+  }
+  var audLine = function(r, a){ return a === 'public' ? 'Open to anyone with the link' : a === 'class' ? 'For the ' + (r.course || 'class') + ' class · sign in with a Taejae account' : 'For Taejae members · sign in with a Taejae account'; };
   var allPieces = function(room){ var out = []; room.booths.forEach(function(b){ b.pieces.forEach(function(p){ out.push({ p: p, b: b }); }); }); return out; };
   function find(kind, key){
     for (var i = 0; i < ROOMS.length; i++) {
@@ -336,7 +362,7 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
   function header(where, publicRoom){
     var top = $('top');
     if (!sbUser) {
-      top.innerHTML = '<div class="wrap"><a class="hostname" href="#s/' + (publicRoom ? publicRoom.key : '') + '">태재대학교' + (publicRoom ? ' · <b>' + esc(publicRoom.name) + '</b>' : '') + '</a><a class="signin" href="#home">Taejae sign-in</a></div>';
+      top.innerHTML = '<div class="wrap"><a class="hostname" href="#s/' + (publicRoom ? publicRoom.key : '') + '">태재대학교' + (publicRoom ? ' · <b>' + esc(publicRoom.name) + '</b>' : '') + '</a></div>';
       return;
     }
     var initials = String(PROFESSOR.name || '').split(/\s+/).map(function(w){ return w[0]; }).join('').slice(0, 2).toUpperCase() || '–';
@@ -496,7 +522,12 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
   function render(){
     var hash = location.hash.slice(1), parts = hash.split('/'), kind = parts[0], key = parts[1], f = key ? find(kind, key) : null;
     current = null; rot = 0; clearTimeout(autoTimer); clearHover(); hovering = false;
-    if (!sbUser && !(f && f.room.isPublic)) { header(''); app.innerHTML = ''; showWall(true); return; }
+    if (f && kind === 's' && AUD[parts[2]]) { try { sessionStorage.setItem('ergon_aud_' + f.room.key, parts[2]); } catch (e) {} }
+    if (f && !canView(f.room)) {
+      header('', sbUser ? null : f.room); showWall(false);
+      app.innerHTML = gateHTML(f.room); document.title = f.room.name + ' · Ergon'; window.scrollTo(0, 0); return;
+    }
+    if (!sbUser && !f) { header(''); app.innerHTML = ''; wallFor(null); showWall(true); return; }
     showWall(false);
     if (f && kind === 'p') { header('showrooms', f.room); app.innerHTML = leafHTML(f.room, f.booth, f.piece, f.k); document.title = f.piece.name + ' · Ergon'; }
     else if (f && kind === 'b') {
@@ -510,6 +541,21 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
       if (kind === 'studios') { var el = $('studios-sec'); if (el) { el.scrollIntoView(); return; } } }
     window.scrollTo(0, 0);
   }
+  // The gate a visitor sees on a showroom that is for Taejae members or a class
+  function gateHTML(r){
+    var a = audienceOf(r), signed = !!sbUser;
+    var lead = a === 'class' ? 'This showroom is for the ' + (r.course || '') + ' class.' : 'This showroom is for Taejae members.';
+    var body = signed ? 'You are signed in, but this class list does not include you. Ask the host to add you.' : 'Sign in with your Taejae account to open it.';
+    return '<section class="poster gut" style="--tone:' + r.tone + '"><div class="wrap"><div class="pgrid" style="margin-top:28px;min-height:320px"><div class="id">' +
+      '<div class="ctx" style="margin-top:0">' + esc(r.ctx) + '</div><h1>' + esc(r.name) + '</h1><div class="prog">' + esc(lead) + ' ' + esc(body) + '</div>' +
+      (signed ? '' : '<div style="margin-top:28px"><button type="button" class="gatebtn" data-gate="' + r.key + '">Sign in with your Taejae account</button></div>') +
+      '</div></div></div></section>' + foot();
+  }
+  function wallFor(r){
+    $('wall-sub').textContent = r ? 'Sign in with your Taejae account to open ' + r.name + '.' : 'Use your Taejae faculty email to sign in';
+  }
+  app.addEventListener('click', function(e){ var t = e.target.closest('[data-gate]'); if (!t) return; var f = find('s', t.getAttribute('data-gate')); wallFor(f && f.room); showWall(true); });
+
   // ── HOME CAROUSEL ──
   var AUTO = 8000, DWELL = 450, REPEAT = 1600, reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var hoverTimer = null, autoTimer = null, hovering = false;
@@ -593,8 +639,16 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
   }, 4000);
 
   // ── INVITE: link, QR code and a printable invitation card, one click each ──
-  var invRoom = null;
-  var inviteURL = function(r){ return location.origin + location.pathname + '#s/' + r.key; };
+  var invRoom = null, invAud = 'public';
+  var inviteURL = function(r, a){ a = a || invAud; return location.origin + location.pathname + '#s/' + r.key + (a === r.audience ? '' : '/' + a); };
+  function fillInvite(){
+    var r = invRoom, url = inviteURL(r), q = qrModules(url), cv = $('inv-qr'), ctx = cv.getContext('2d');
+    $('inv-link').value = url;
+    $('inv-note').textContent = invAud === 'public' ? 'Anyone with the link can open this showroom. No sign-in needed.' : invAud === 'class' ? 'Only the ' + (r.course || '') + ' class can open it. Invitees are asked to sign in with a Taejae account.' : 'Anyone at Taejae can open it. Invitees are asked to sign in with a Taejae account.';
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    if (q) drawQR(ctx, q, 0, 0, cv.width); else $('inv-note').textContent = 'The QR code could not load. Copy the link instead.';
+  }
+  document.addEventListener('change', function(e){ if (e.target && e.target.name === 'inv-aud' && invRoom) { invAud = e.target.value; fillInvite(); } });
   function qrModules(text){ if (!window.qrcode) return null; var q = window.qrcode(0, 'M'); q.addData(text); q.make(); return q; }
   function drawQR(ctx, q, x, y, size){
     var n = q.getModuleCount(), cell = size / (n + 8);
@@ -612,12 +666,12 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
     cv.toBlob(function(b){ var a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1000); }, 'image/png');
   }
   function openInvite(key){
-    var f = find('s', key); if (!f) return; var r = invRoom = f.room, url = inviteURL(r), s = lead(r);
-    $('inv-head').style.background = r.tone; $('inv-title').textContent = r.name; $('inv-link').value = url;
-    $('inv-note').textContent = r.isPublic ? 'Anyone with the link can open this showroom. No sign-in needed.' : 'Invitees sign in with a Taejae account to open it.';
-    var q = qrModules(url), cv = $('inv-qr'), ctx = cv.getContext('2d');
-    ctx.clearRect(0, 0, cv.width, cv.height);
-    if (q) drawQR(ctx, q, 0, 0, cv.width); else $('inv-note').textContent = 'The QR code could not load. Copy the link instead.';
+    var f = find('s', key); if (!f) return; var r = invRoom = f.room;
+    invAud = r.audience || 'taejae';
+    $('inv-head').style.background = r.tone; $('inv-title').textContent = r.name;
+    $('inv-class-sub').textContent = r.course ? r.course + ' members, after sign-in' : 'Class members, after sign-in';
+    Array.prototype.forEach.call(document.querySelectorAll('input[name="inv-aud"]'), function(i){ i.checked = i.value === invAud; });
+    fillInvite();
     $('inv').showModal();
   }
   function invitationCard(r){
@@ -632,7 +686,7 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
     ctx.fillText('Host · ' + r.host, 96, Math.max(y + 100, 760));
     if (q) drawQR(ctx, q, 96, 960, 520);
     ctx.fillStyle = '#111111'; ctx.font = '500 44px ' + font; ctx.fillText('Scan to visit', 680, 1060);
-    ctx.fillStyle = '#5E6068'; ctx.font = '400 32px ' + font; wrapText(ctx, r.isPublic ? 'Open to anyone with the link' : 'Sign in with a Taejae account', 680, 1120, 470, 44);
+    ctx.fillStyle = '#5E6068'; ctx.font = '400 32px ' + font; wrapText(ctx, audLine(r, invAud), 680, 1120, 470, 44);
     ctx.font = '400 26px ' + font; ctx.fillText(url.replace(/^https?:\/\//, ''), 680, 1260);
     ctx.fillStyle = '#5E6068'; ctx.font = '400 28px ' + font; ctx.fillText('Ergon · Taejae University', 96, H - 90);
     return cv;
@@ -671,7 +725,8 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
     return refreshing;
   }
   function authHeaders(){ return { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + sbUser.access_token, 'Content-Type': 'application/json' }; }
-  function showWall(on){ $('login-wall').hidden = !on; if (on) setTimeout(function(){ $('wall-email').focus(); }, 0); }
+  function showWall(on){ $('login-wall').hidden = !on; $('wall-cancel').hidden = !(on && /^#?s\//.test(location.hash)); if (on) setTimeout(function(){ $('wall-email').focus(); }, 0); }
+  $('wall-cancel').addEventListener('click', function(){ showWall(false); });
   function toast(msg){ var t = $('toast'); t.textContent = msg; t.hidden = false; setTimeout(function(){ t.hidden = true; }, 2500); }
 
   // After sign-in, or after a refresh that restored the session: the faculty profile decides the name and the first-sign-in password step

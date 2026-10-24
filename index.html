@@ -208,6 +208,31 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
 .inv button{min-height:42px;padding:0 16px;border:1px solid var(--fg);background:var(--bg);font-size:14px}
 .inv button.pri{background:var(--fg);color:var(--bg)}
 .inv .x{position:absolute;top:10px;right:10px;width:40px;height:40px;min-height:0;padding:0;border:none;background:transparent;color:#FFFFFF;font-size:20px}
+/* teams and booths: the host drags the class into teams */
+.ibtn+.ibtn{margin-left:8px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+dialog.tm{width:min(1200px,calc(100vw - 32px))}
+dialog.tm .tm-body{display:flex;flex-wrap:wrap;min-height:420px;max-height:calc(100vh - 260px);overflow:auto}
+dialog.tm .tm-left{flex:0 0 250px;max-width:100%;display:flex;flex-direction:column;border-right:1px solid var(--line);background:var(--tile)}
+dialog.tm .tm-right{flex:1 1 560px;min-width:0;padding:14px}
+dialog.tm .tm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+dialog.tm .tm-team{display:flex;flex-direction:column;box-shadow:0 0 0 1px var(--line)}
+dialog.tm .tm-h{display:flex;align-items:baseline;gap:8px;padding:10px 12px 6px;font-size:13px}
+dialog.tm .tm-h span{color:var(--muted)}
+dialog.tm .tm-zone{display:flex;flex-direction:column;gap:6px;min-height:96px;padding:8px 10px 10px;flex:1}
+dialog.tm .tm-zone.hot,dialog.tm .tm-new.hot{background:var(--tile);box-shadow:inset 0 0 0 2px var(--fg)}
+dialog.tm .tm-card{display:flex;flex-direction:column;align-items:flex-start;gap:1px;width:100%;min-height:48px;padding:7px 11px;border:none;background:var(--bg);color:var(--fg);box-shadow:0 0 0 1px var(--line);text-align:left;cursor:grab;font:inherit}
+dialog.tm .tm-card b{font-size:14px;font-weight:500}
+dialog.tm .tm-card small{font-size:12px;color:var(--muted)}
+dialog.tm .tm-card.on{box-shadow:0 0 0 2px var(--fg)}
+dialog.tm .tm-title{display:block;padding:0 12px 6px}
+dialog.tm .tm-title input{width:100%;box-sizing:border-box;min-height:34px;padding:0 8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font-size:13px}
+dialog.tm .tm-new{min-height:200px;border:none;background:transparent;box-shadow:inset 0 0 0 1.5px var(--line);color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:14px}
+dialog.tm .tm-new span:first-child{font-size:28px;font-weight:300}
+dialog.tm .tm-rm{margin-left:auto;min-height:28px;padding:0 4px;border:none;background:transparent;color:var(--muted);font-size:12px;text-decoration:underline}
+dialog.tm .tm-foot{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:14px 24px;border-top:1px solid var(--line);font-size:14px;color:var(--muted)}
+dialog.tm .tm-btns{margin-left:auto;display:flex;gap:8px}
+dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:60;padding:10px 16px;background:var(--fg);color:var(--bg);font-size:14px}
 .toast[hidden]{display:none}
 @media (prefers-reduced-motion: reduce){.shot img{animation:none}.card{transition:none}}
@@ -258,6 +283,12 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
   </div>
 </dialog>
 
+<dialog class="inv tm" id="tm" aria-labelledby="tm-title">
+  <div class="ih" id="tm-head"><button type="button" class="x" data-tm="close" aria-label="Close">×</button><span class="lbl" id="tm-ctx" style="color:rgba(255,255,255,.8)"></span><h2 id="tm-title">Teams and booths</h2></div>
+  <div class="tm-body" id="tm-body"></div>
+  <div class="tm-foot"><span id="tm-status"></span><span class="tm-btns"><button type="button" data-tm="close">Cancel</button><button type="button" class="pri" id="tm-save" data-tm="save">Save</button></span></div>
+</dialog>
+
 <script>
 (function(){
   // ── SUPABASE (the project Telos and TaeSylla share) ──
@@ -269,16 +300,20 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
   // host (runs it and invites), exhibitor (sends work to their booth) or visitor (views).
   // People are matched by a SHA-256 of their sign-in email, so no address sits in this page.
   var signedIn = function(){ return !!(sbUser && PROFESSOR); };
-  var roleIn = function(r){ var id = signedIn() && PROFESSOR.id; return !id ? 'visitor' : (r.hosts || []).indexOf(id) >= 0 ? 'host' : (r.exhibitors || []).indexOf(id) >= 0 ? 'exhibitor' : 'visitor'; };
+  var roleIn = function(r){
+    if (r.db) { if (!signedIn()) return 'visitor'; var me = PROFESSOR.email; return r.hostEmails.indexOf(me) >= 0 ? 'host' : r.booths.some(function(b){ return b.exhibitorEmails.indexOf(me) >= 0; }) ? 'exhibitor' : 'visitor'; }
+    var id = signedIn() && PROFESSOR.id; return !id ? 'visitor' : (r.hosts || []).indexOf(id) >= 0 ? 'host' : (r.exhibitors || []).indexOf(id) >= 0 ? 'exhibitor' : 'visitor'; };
   var sha256 = function(t){ return crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)).then(function(b){ return Array.prototype.map.call(new Uint8Array(b), function(x){ return ('0' + x.toString(16)).slice(-2); }).join(''); }); };
 
   var esc = function(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var d = function(s){ return new Date(s + 'T00:00:00+09:00'); };
   var $ = function(id){ return document.getElementById(id); };
   // Where a piece opens and how it plays in place
-  var OPEN = function(p){ return p.type === 'slides' ? 'https://docs.google.com/presentation/d/' + p.id + '/present' : 'https://drive.google.com/file/d/' + p.id + '/view'; };
-  var SOURCE = function(p){ return p.type === 'slides' ? 'https://docs.google.com/presentation/d/' + p.id + '/view' : 'https://drive.google.com/file/d/' + p.id + '/view'; };
-  var EMBED = function(p){ return p.type === 'slides' ? 'https://docs.google.com/presentation/d/' + p.id + '/embed?start=false&loop=false' : 'https://drive.google.com/file/d/' + p.id + '/preview'; };
+  var OPEN = function(p){ if (p.url) return p.url; return p.type === 'slides' ? 'https://docs.google.com/presentation/d/' + p.id + '/present' : 'https://drive.google.com/file/d/' + p.id + '/view'; };
+  var SOURCE = function(p){ if (p.url) return p.url; return p.type === 'slides' ? 'https://docs.google.com/presentation/d/' + p.id + '/view' : 'https://drive.google.com/file/d/' + p.id + '/view'; };
+  var EMBED = function(p){
+    if (p.url) return p.provider === 'youtube' && p.id ? 'https://www.youtube.com/embed/' + p.id : p.provider === 'google_slides' && p.id ? 'https://docs.google.com/presentation/d/' + p.id + '/embed?start=false&loop=false' : p.provider === 'google_drive' && p.id ? 'https://drive.google.com/file/d/' + p.id + '/preview' : p.url;
+    return p.type === 'slides' ? 'https://docs.google.com/presentation/d/' + p.id + '/embed?start=false&loop=false' : 'https://drive.google.com/file/d/' + p.id + '/preview'; };
 
   // ── DATA: showrooms and studios ──
   var DA321_TEAMS = ['Vietnam’s Climate-Tech Ecosystem', 'Korea in East Asian Ceramics', 'Spatial Audio from Natural Language', 'Accessible Bladder Data Visualization', 'Income Distribution and Household Consumption in China', 'Global Brands’ Marketing Across Markets', 'K-pop Comeback Success', 'Seoul Scout', 'The Searcher’s Workbench'];
@@ -302,7 +337,7 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
             { key: 'w2s', type: 'slides', name: 'AI는 어떻게 대화하는가', part: 'Slides · all three lessons', src: 'Google Slides', img: 'img/w2-slides.png', id: '1UvkCOd2Mv8MSArCVtBUtIsDVLj1XdqIbA8EtVxIbGJg' }
           ] }
       ] },
-    { key: 'da321', name: 'Project Demo and Presentation', ctx: 'DA321 Data Analytics and Visualization · Fall 2026', tone: '#123B37', host: '곽지영 교수', hosts: ['b3154590ea5dc4b3f5ba57afc42ab6c092a10711fcf3c201ba0989d2c2d9e64d'], exhibitors: [], audience: 'class', course: 'DA321', roster: [],
+    { key: 'da321', dbOffering: 54, name: 'Project Demo and Presentation', ctx: 'DA321 Data Analytics and Visualization · Fall 2026', tone: '#123B37', host: '곽지영 교수', hosts: ['b3154590ea5dc4b3f5ba57afc42ab6c092a10711fcf3c201ba0989d2c2d9e64d'], exhibitors: [], audience: 'class', course: 'DA321', roster: [],
       sessions: [
         { name: 'EDA workshop', when: 'Oct 5 & 7', open: d('2026-09-28'), from: d('2026-10-05'), to: d('2026-10-08') },
         { name: 'Data-analytics case study', when: 'Nov 2', open: d('2026-10-12'), from: d('2026-11-02'), to: d('2026-11-03') },
@@ -320,8 +355,80 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
   ];
   var STUDIOS = [
     { group: 'Your studio', meta: 'Your own lectures and projects · private until you send them to a showroom', owner: 'b3154590ea5dc4b3f5ba57afc42ab6c092a10711fcf3c201ba0989d2c2d9e64d', items: [{ who: '곽지영 교수', name: '뇌과학 아카데미 강의', note: 'Sent to 뇌과학 아카데미 특강', imgs: ['img/w1-l1.png', 'img/w1-slides.png', 'img/w2-slides.png'], href: '#s/brain' }] },
-    { group: 'DA321 Data Analytics and Visualization · Fall 2026', meta: '9 team studios', hostOf: 'da321', items: DA321_TEAMS.map(function(t, i){ return { who: 'Team ' + (i + 1), name: t, note: 'Studio not connected yet', imgs: [] }; }) }
+    { group: 'DA321 Data Analytics and Visualization · Fall 2026', meta: '9 team studios', hostOf: 'da321', dbOffering: 54, items: DA321_TEAMS.map(function(t, i){ return { who: 'Team ' + (i + 1), name: t, note: 'Studio not connected yet', imgs: [] }; }) }
   ];
+
+  // ── DATA FROM THE DATABASE (ergon_* tables). Rooms written above stay until they move there. ──
+  var STATIC_ROOMS = ROOMS.slice(), STATIC_STUDIOS = STUDIOS.slice();
+  var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function whenOf(a, b){ var x = d(a), y = d(b || a), f = MON[x.getMonth()] + ' ' + x.getDate(); if (!b || a === b) return f; return f + ' – ' + (x.getMonth() === y.getMonth() ? '' : MON[y.getMonth()] + ' ') + y.getDate(); }
+  function dayAfter(s){ var x = d(s); x.setDate(x.getDate() + 1); return x; }
+  function rest(path){
+    return sbFresh().then(function(){ return fetch(SUPABASE_URL + '/rest/v1/' + path, { headers: authHeaders() }); })
+      .then(function(r){ if (!r.ok) throw new Error(path.split('?')[0] + ' ' + r.status); return r.json(); });
+  }
+  function rpc(name, body){
+    return sbFresh().then(function(){ return fetch(SUPABASE_URL + '/rest/v1/rpc/' + name, { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) }); })
+      .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ if (!r.ok) throw new Error(j.message || j.msg || name + ' failed'); return j; }); });
+  }
+  var KIND = { slide_deck: 'slides', video: 'video' };
+  function pieceOf(p){
+    return { key: 'p' + p.piece_id, type: KIND[p.kind] || 'link', kind: p.kind, name: p.title, part: p.part || String(p.kind).replace('_', ' '),
+      src: String(p.provider).replace('_', ' '), img: p.thumbnail_url || '', id: p.file_id || '', url: p.url, provider: p.provider };
+  }
+  function roomOf(w, names){
+    var hosts = (w.ergon_showroom_hosts || []).map(function(h){ return h.email; }), amHost = hosts.indexOf(PROFESSOR.email) >= 0;
+    var ss = (w.ergon_sessions || []).filter(function(s){ return !s.is_draft; })
+      .sort(function(a, b){ return a.sort_order - b.sort_order || (a.stage_from < b.stage_from ? -1 : 1); });
+    var booths = (w.ergon_booths || []).filter(function(b){ return !b.hidden || amHost; })
+      .sort(function(a, b){ return a.sort_order - b.sort_order; }).map(function(b){
+        var ex = (b.ergon_booth_exhibitors || []).map(function(x){ return x.email; });
+        var ps = (b.ergon_booth_entries || []).filter(function(e){ return !e.withdrawn_at && e.ergon_pieces; }).map(function(e){ return pieceOf(e.ergon_pieces); });
+        return { key: 'b' + b.booth_id, boothId: b.booth_id, label: b.label, name: b.title, prog: b.summary || '', exhibitorEmails: ex,
+          people: [['Exhibitors', ex.length ? plural(ex.length, 'person') : 'Not assigned yet']], pieces: ps,
+          when: b.from_on ? whenOf(b.from_on, b.to_on) : '', from: b.from_on ? d(b.from_on) : null, to: b.from_on ? dayAfter(b.to_on || b.from_on) : null };
+      });
+    var withWork = booths.filter(function(b){ return b.pieces.length; }).length;
+    return { key: 's' + w.showroom_id, showroomId: w.showroom_id, db: true, offeringId: w.offering_id, name: w.title, ctx: w.subtitle || '', tone: w.tone || '#2F2F2F',
+      host: hosts.map(function(e){ return names[e] || e.split('@')[0]; }).join(', '), hostEmails: hosts, audience: w.audience,
+      sessions: ss.length ? ss.map(function(s){ return { name: s.name, when: whenOf(s.stage_from, s.stage_to), open: d(s.opens_on || s.stage_from), from: d(s.stage_from), to: dayAfter(s.stage_to) }; })
+                          : [{ name: 'Showcase', when: 'Date to be set', open: d('2999-01-01'), from: d('2999-01-01'), to: d('2999-01-02') }],   // no session yet: Coming soon
+      facts: Array.isArray(w.facts) ? w.facts : [],
+      progress: { 'On stage': 'Appraisal open', 'Open': withWork + ' of ' + plural(booths.length, 'booth') + ' have work', 'Coming soon': 'Opens for work soon', 'Past': 'All sessions shown' },
+      booths: booths };
+  }
+  function loadDB(){
+    if (!signedIn()) return Promise.resolve();
+    return Promise.all([
+      rest('ergon_showrooms?select=showroom_id,title,subtitle,tone,offering_id,audience,facts,ergon_showroom_hosts(email),' +
+        'ergon_sessions(name,sort_order,is_draft,opens_on,locks_on,stage_from,stage_to),' +
+        'ergon_booths(booth_id,label,title,summary,sort_order,hidden,from_on,to_on,ergon_booth_exhibitors(email),ergon_booth_entries(withdrawn_at,ergon_pieces(piece_id,kind,title,part,url,provider,file_id,thumbnail_url)))&order=showroom_id'),
+      rest('ergon_studios?select=studio_id,title,offering_id,team_label,ergon_studio_members(email),ergon_pieces(kind,thumbnail_url)&archived_at=is.null&order=studio_id')
+    ]).then(function(res){
+      var rooms = res[0], studios = res[1], hostEmails = [];
+      rooms.forEach(function(w){ (w.ergon_showroom_hosts || []).forEach(function(h){ if (hostEmails.indexOf(h.email) < 0) hostEmails.push(h.email); }); });
+      var names = hostEmails.length ? rest('faculty_profiles?select=email,name_en&email=in.(' + hostEmails.map(encodeURIComponent).join(',') + ')').catch(function(){ return []; }) : Promise.resolve([]);
+      return names.then(function(fp){
+        var nm = {}; fp.forEach(function(p){ nm[String(p.email).toLowerCase()] = p.name_en; });
+        var dbRooms = rooms.map(function(w){ return roomOf(w, nm); });
+        var offerings = dbRooms.map(function(r){ return r.offeringId; }).filter(Boolean);
+        ROOMS = dbRooms.concat(STATIC_ROOMS.filter(function(r){ return !(r.dbOffering && offerings.indexOf(r.dbOffering) >= 0) && !dbRooms.some(function(w){ return w.name === r.name && w.ctx === r.ctx; }); }));
+        // Studios: a course's team studios for its instructor, then the teams I am on
+        var me = PROFESSOR.email, groups = {}, order = [];
+        studios.forEach(function(s){
+          var mine = (s.ergon_studio_members || []).some(function(m){ return m.email === me; });
+          var room = dbRooms.filter(function(r){ return r.offeringId && r.offeringId === s.offering_id; })[0];
+          var gk = s.offering_id && !mine ? 'o' + s.offering_id : 'mine';
+          if (!groups[gk]) { groups[gk] = { group: gk === 'mine' ? 'Your teams' : (room ? room.ctx : 'Course studios'), meta: '', teamsOf: gk !== 'mine' && room ? room.key : null, items: [] }; order.push(gk); }
+          var n = (s.ergon_studio_members || []).length;
+          groups[gk].items.push({ who: s.team_label || 'Studio', name: s.title, note: n ? plural(n, 'member') : 'No members yet',
+            imgs: (s.ergon_pieces || []).map(function(p){ return p.thumbnail_url; }).filter(Boolean) });
+        });
+        order.forEach(function(k){ groups[k].meta = plural(groups[k].items.length, 'studio'); });
+        STUDIOS = STATIC_STUDIOS.filter(function(g){ return !(g.dbOffering && offerings.indexOf(g.dbOffering) >= 0); }).concat(order.map(function(k){ return groups[k]; }));
+      });
+    }).catch(function(ex){ console.warn('Ergon: database not loaded -', ex && ex.message); });
+  }
 
   // ── STATE OF A SHOWROOM FROM TODAY'S DATE ──
   var now = new Date();
@@ -345,6 +452,7 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
   var AUD = { public: 'Anyone with the link', taejae: 'Taejae members', class: 'The class' };
   function audienceOf(r){ var a = null; try { a = sessionStorage.getItem('ergon_aud_' + r.key); } catch (e) {} return AUD[a] ? a : (r.audience || 'taejae'); }
   function canView(r){
+    if (r.db) return !!sbUser;   // the database only returns showrooms this person may see
     var a = audienceOf(r);
     if (a === 'public') return true;
     if (!sbUser) return false;
@@ -408,7 +516,7 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
     STUDIOS.filter(function(g){ return g.owner ? g.owner === me : g.hostOf ? roleIn(find('s', g.hostOf).room) === 'host' : true; }).concat(
       STUDIOS.some(function(g){ return g.owner && g.owner === me; }) ? [] : [{ group: 'Your studio', meta: 'Your own lectures and projects · private until you send them to a showroom', items: [{ who: PROFESSOR ? PROFESSOR.name : '', name: 'Nothing here yet', note: 'Add a lecture, a project or your team’s work', imgs: [] }] }]
     ).forEach(function(g){
-      h += '<div class="group"><b>' + esc(g.group) + '</b><span class="lbl">' + esc(g.meta) + '</span></div><div class="tiles">';
+      h += '<div class="group"><b>' + esc(g.group) + '</b><span class="lbl">' + esc(g.meta) + (g.teamsOf && find('s', g.teamsOf) && roleIn(find('s', g.teamsOf).room) === 'host' ? ' · <button type="button" class="hadd" data-teams="' + g.teamsOf + '">Edit teams</button>' : '') + '</span></div><div class="tiles">';
       h += g.items.map(function(o){
         var inner = mosaic(o.imgs.map(function(src){ return '<img src="' + src + '" alt="">'; })) +
           '<span class="row"><span>' + esc(o.who) + '</span><span></span></span><span class="t">' + esc(o.name) + '</span><span class="s">' + esc(o.note) + '</span>';
@@ -476,27 +584,28 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
       '<div class="cap"><span><b>' + esc(it.p.name) + '</b> · ' + esc(it.sub) + '</span><span>' + (k + 1) + ' / ' + s.length + '</span></div>';
   }
   function page(cfg){
-    var h = '<section class="poster gut" style="--tone:' + cfg.tone + '" aria-label="' + esc(cfg.name) + '"><div class="wrap">' + crumb(cfg.path, cfg.sib, cfg.invite && roleIn(find('s', cfg.invite).room) === 'host' ? '<button type="button" class="ibtn" data-invite="' + cfg.invite + '">Invite</button>' : '') +
+    var h = '<section class="poster gut" style="--tone:' + cfg.tone + '" aria-label="' + esc(cfg.name) + '"><div class="wrap">' + crumb(cfg.path, cfg.sib, cfg.invite && roleIn(find('s', cfg.invite).room) === 'host' ? (find('s', cfg.invite).room.offeringId ? '<button type="button" class="ibtn" data-teams="' + cfg.invite + '">Teams and booths</button>' : '') + '<button type="button" class="ibtn" data-invite="' + cfg.invite + '">Invite</button>' : '') +
       '<div class="pgrid"><div class="id"><div class="state"><span class="chip" style="background:' + chipBg(cfg.state) + '">' + cfg.state + '</span><span>' + esc(cfg.when) + '</span></div>' +
       '<div class="ctx">' + esc(cfg.ctx) + '</div><h1>' + esc(cfg.name) + '</h1>' + (cfg.prog ? '<div class="prog">' + esc(cfg.prog) + '</div>' : '') +
       '<dl class="idl">' + cfg.dl.map(function(x){ return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd>'; }).join('') + '</dl>' +
       '</div><div class="stage" id="stage">' + stageHTML(cfg) + '</div></div>';
     if (cfg.sessions && cfg.sessions.length > 1) h += '<div class="sess" role="group" aria-label="Sessions">' + cfg.sessions.map(function(s){ var st = stateOf(s); return '<div class="' + (s === cfg.lead ? 'on' : '') + '">' + esc(s.name) + '<small>' + esc(s.when) + (st === 'On stage' ? ' · on stage' : st === 'Past' ? ' · past' : '') + '</small></div>'; }).join('') + '</div>';
     h += '</div></section><div class="gut"><div class="wrap">';
-    h += '<section class="sec" aria-labelledby="t-h"><div class="sec-h"><h2 id="t-h">' + esc(cfg.tilesTitle) + '</h2></div>' + (cfg.tiles.length ? '<div class="tiles">' + cfg.tiles.join('') + '</div>' : '<div class="empty">' + esc(cfg.noTiles) + '</div>') + '</section>';
+    h += '<section class="sec" aria-labelledby="t-h"><div class="sec-h"><h2 id="t-h">' + esc(cfg.tilesTitle) + '</h2></div>' + (cfg.tiles.length ? '<div class="tiles">' + cfg.tiles.join('') + '</div>' : '<div class="empty">' + esc(cfg.noTiles) + (cfg.emptyAct || '') + '</div>') + '</section>';
     h += '<section class="sec" aria-labelledby="f-h"><div class="sec-h"><h2 id="f-h">' + esc(cfg.factsTitle) + '</h2></div><dl class="facts">' + cfg.facts.map(function(x){ return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd>'; }).join('') + '</dl></section>';
     return h + '</div></div>' + foot();
   }
   function pieceTile(p){
     return '<a class="tile" href="#p/' + p.key + '"><span class="one">' + visual(p) + (p.type === 'video' ? playIcon : '') + '</span>' +
-      '<span class="row"><span>' + esc(p.part) + '</span><span>' + (p.type === 'video' ? 'Video' : 'Google Slides') + '</span></span><span class="t">' + esc(p.name) + '</span><span class="s">' + esc(p.src) + '</span></a>';
+      '<span class="row"><span>' + esc(p.part) + '</span><span>' + (p.type === 'video' ? 'Video' : p.type === 'slides' ? 'Google Slides' : 'Link') + '</span></span><span class="t">' + esc(p.name) + '</span><span class="s">' + esc(p.src) + '</span></a>';
   }
   function showroomCfg(r){
     var s = lead(r), st = stateOf(s);
     return { invite: r.key, tone: r.tone, path: signedIn() ? [['Showrooms', '#home'], [r.name, null]] : [[r.name, null]], state: st, when: r.sessions.length > 1 ? s.name + ' · ' + s.when : s.when, ctx: r.ctx, name: r.name,
       prog: r.progress[st] || '', dl: [['Host', r.host], ['Booths', plural(r.booths.length, 'booth')]], sessions: r.sessions, lead: s,
       stage: allPieces(r).map(function(x){ return { p: x.p, sub: x.b.label + ' · ' + x.p.part }; }), empty: r.booths.length ? 'Nothing sent yet' : 'Booths appear here as teams send work',
-      tilesTitle: 'Booths', noTiles: 'Booths appear here as teams send work', facts: r.facts, factsTitle: 'About this showroom',
+      tilesTitle: 'Booths', noTiles: roleIn(r) === 'host' && r.offeringId ? 'No booths yet. Put the class into teams; each team gets a booth and a studio. ' : 'Booths appear here as teams send work',
+      emptyAct: roleIn(r) === 'host' && r.offeringId ? '<button type="button" class="hadd" data-teams="' + r.key + '">Set up teams</button>' : '', facts: r.facts, factsTitle: 'About this showroom',
       tiles: r.booths.map(function(b){
         var n = b.pieces.length, bs = b.from ? boothState(r, b) : null;
         return '<a class="tile" href="#b/' + b.key + '">' + mosaic(b.pieces.map(visual)) +
@@ -720,6 +829,76 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
     if (act === 'card') { var go = function(){ saveCanvas(invitationCard(invRoom), 'ergon-' + slug + '-invitation.png'); }; if (document.fonts && document.fonts.load) Promise.all([document.fonts.load('300 104px "Noto Sans KR"'), document.fonts.load('500 44px "Noto Sans KR"')]).then(go, go); else go(); }
   });
 
+  // ── TEAMS AND BOOTHS: the host drags the class into teams; each team gets a booth and a studio ──
+  var tm = { room: null, roster: [], teams: [], sel: null };
+  function openTeams(key){
+    var f = find('s', key); if (!f || !f.room.db || roleIn(f.room) !== 'host') return;
+    tm.room = f.room; tm.sel = null; tm.roster = [];
+    tm.teams = f.room.booths.map(function(b){ return { booth_id: b.boothId, title: b.name, emails: b.exhibitorEmails.slice() }; });
+    $('tm-ctx').textContent = f.room.ctx ? f.room.ctx + ' · ' + f.room.name : f.room.name;
+    $('tm-head').style.background = f.room.tone;
+    $('tm-body').innerHTML = '<p class="tm-load">Loading the class…</p>'; $('tm-status').textContent = ''; $('tm-save').disabled = true;
+    $('tm').showModal();
+    rpc('ergon_class_roster', { p_showroom_id: f.room.showroomId })
+      .then(function(rows){ tm.roster = rows || []; $('tm-save').disabled = false; drawTeams(); })
+      .catch(function(ex){ $('tm-body').innerHTML = '<p class="tm-load">' + esc(ex.message) + '</p>'; });
+  }
+  function drawTeams(){
+    var by = {}, placed = {};
+    tm.roster.forEach(function(s){ by[s.email] = s; });
+    tm.teams.forEach(function(t){ t.emails.forEach(function(e){ placed[e] = true; }); });
+    var card = function(e){
+      var s = by[e] || { name_en: e.split('@')[0], student_no: '', signed_up: true };
+      return '<button type="button" class="tm-card' + (tm.sel === e ? ' on' : '') + '" draggable="true" data-email="' + esc(e) + '" aria-pressed="' + (tm.sel === e) + '"><b>' + esc(s.name_en) + '</b><small>' + esc(s.student_no || '') + (s.signed_up ? '' : ' · no sign-in yet') + '</small></button>';
+    };
+    var left = tm.roster.filter(function(s){ return !placed[s.email]; });
+    var h = '<div class="tm-left"><div class="tm-h"><b>Students</b><span>' + left.length + ' not on a team</span></div><div class="tm-zone" data-zone="left">' +
+      left.map(function(s){ return card(s.email); }).join('') + (left.length ? '' : '<p class="tm-done">Everyone is on a team</p>') + '</div></div><div class="tm-right"><div class="tm-grid">';
+    tm.teams.forEach(function(t, i){
+      h += '<div class="tm-team"><div class="tm-h"><b>Team ' + (i + 1) + '</b><span>' + plural(t.emails.length, 'student') + '</span>' +
+        (t.emails.length ? '' : '<button type="button" class="tm-rm" data-rm="' + i + '">Remove</button>') + '</div>' +
+        '<label class="tm-title"><span class="sr">Project title for Team ' + (i + 1) + '</span><input type="text" data-title="' + i + '" placeholder="Project title" value="' + esc(t.title) + '"></label>' +
+        '<div class="tm-zone" data-zone="' + i + '">' + t.emails.map(card).join('') + '</div></div>';
+    });
+    h += '<button type="button" class="tm-new" data-zone="new"><span aria-hidden="true">+</span><span>' +
+      (tm.sel ? 'New team with ' + esc((by[tm.sel] || {}).name_en || tm.sel) : 'Drop a student here to start a team') + '</span></button></div></div>';
+    $('tm-body').innerHTML = h;
+    var n = tm.roster.length - left.length;
+    $('tm-status').textContent = n + ' of ' + tm.roster.length + ' students on ' + plural(tm.teams.length, 'team') + ' · each team gets a booth and a studio';
+    $('tm-save').textContent = 'Save ' + plural(tm.teams.length, 'team');
+  }
+  function moveTo(email, zone){
+    if (email) tm.teams.forEach(function(t){ t.emails = t.emails.filter(function(e){ return e !== email; }); });
+    if (zone === 'new') tm.teams.push({ booth_id: null, title: '', emails: email ? [email] : [] });
+    else if (email && zone !== 'left' && tm.teams[+zone]) tm.teams[+zone].emails.push(email);
+    tm.sel = null; drawTeams();
+  }
+  app.addEventListener('click', function(e){ var t = e.target.closest('[data-teams]'); if (t) openTeams(t.getAttribute('data-teams')); });
+  var tmd = $('tm');
+  tmd.addEventListener('dragstart', function(e){ var c = e.target.closest && e.target.closest('.tm-card'); if (c && e.dataTransfer) { e.dataTransfer.setData('text/plain', c.getAttribute('data-email')); e.dataTransfer.effectAllowed = 'move'; } });
+  tmd.addEventListener('dragover', function(e){ var z = e.target.closest('[data-zone]'); if (!z) return; e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'; z.classList.add('hot'); });
+  tmd.addEventListener('dragleave', function(e){ var z = e.target.closest('[data-zone]'); if (z && !z.contains(e.relatedTarget)) z.classList.remove('hot'); });
+  tmd.addEventListener('drop', function(e){ var z = e.target.closest('[data-zone]'); if (!z) return; e.preventDefault(); var em = e.dataTransfer && e.dataTransfer.getData('text/plain'); if (em) moveTo(em, z.getAttribute('data-zone')); });
+  tmd.addEventListener('input', function(e){ var i = e.target.getAttribute && e.target.getAttribute('data-title'); if (i != null && tm.teams[+i]) tm.teams[+i].title = e.target.value; });
+  tmd.addEventListener('click', function(e){
+    if (e.target === tmd) { tmd.close(); return; }
+    var b = e.target.closest('[data-tm]');
+    if (b && b.getAttribute('data-tm') === 'close') { tmd.close(); return; }
+    if (b && b.getAttribute('data-tm') === 'save') {
+      b.disabled = true; b.textContent = 'Saving…';
+      rpc('ergon_assign_teams', { p_showroom_id: tm.room.showroomId, p_teams: tm.teams.map(function(t){ return { booth_id: t.booth_id, title: t.title, emails: t.emails }; }) })
+        .then(function(){ tmd.close(); toast('Teams saved'); return loadDB(); }).then(render)
+        .catch(function(ex){ toast(ex.message); b.disabled = false; drawTeams(); });
+      return;
+    }
+    var rm = e.target.closest('[data-rm]'); if (rm) { tm.teams.splice(+rm.getAttribute('data-rm'), 1); drawTeams(); return; }
+    var c = e.target.closest('.tm-card'); if (c) { var em = c.getAttribute('data-email'); tm.sel = tm.sel === em ? null : em; drawTeams(); return; }
+    var z = e.target.closest('[data-zone]'); if (!z) return;
+    var zone = z.getAttribute('data-zone');
+    if (zone === 'new') moveTo(tm.sel, 'new');
+    else if (tm.sel) moveTo(tm.sel, zone);
+  });
+
   // ── SESSION (same as Telos and TaeSylla) ──
   // sessionStorage, not localStorage: a refresh keeps you signed in, closing the tab does not.
   function saveSession(){ try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(sbUser)); } catch (e) {} }
@@ -751,7 +930,7 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
       .then(function(rows){
         var p = Array.isArray(rows) && rows[0];
         PROFESSOR = { name: (p && p.name_en) || (sbUser.user && sbUser.user.user_metadata && sbUser.user.user_metadata.full_name) || authEmail.split('@')[0], email: authEmail, isFaculty: !!p };
-        return sha256(authEmail).then(function(h){ PROFESSOR.id = h; }, function(){}).then(function(){
+        return sha256(authEmail).then(function(h){ PROFESSOR.id = h; }, function(){}).then(loadDB).then(function(){
         render();
         if (p && p.must_change_password === true) showPwWall('first');
         });

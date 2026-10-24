@@ -265,7 +265,12 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
   var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVja3R1dWFseXV2Y3RpeGxranZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTczOTgsImV4cCI6MjA5MDc3MzM5OH0.EauKNa2US2VQ4dTdCzx0DBZXlw4OR-CQnlMRuulYfB8';
   var SESSION_KEY = 'ergon_session';
   var sbUser = null, PROFESSOR = null, loginAttempts = 0, loginLocked = false;
-  var isFaculty = function(){ return !!(sbUser && PROFESSOR && PROFESSOR.isFaculty); };
+  // Everyone signed in gets the same Ergon. What they can do comes from their role in each showroom:
+  // host (runs it and invites), exhibitor (sends work to their booth) or visitor (views).
+  // People are matched by a SHA-256 of their sign-in email, so no address sits in this page.
+  var signedIn = function(){ return !!(sbUser && PROFESSOR); };
+  var roleIn = function(r){ var id = signedIn() && PROFESSOR.id; return !id ? 'visitor' : (r.hosts || []).indexOf(id) >= 0 ? 'host' : (r.exhibitors || []).indexOf(id) >= 0 ? 'exhibitor' : 'visitor'; };
+  var sha256 = function(t){ return crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)).then(function(b){ return Array.prototype.map.call(new Uint8Array(b), function(x){ return ('0' + x.toString(16)).slice(-2); }).join(''); }); };
 
   var esc = function(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var d = function(s){ return new Date(s + 'T00:00:00+09:00'); };
@@ -275,10 +280,10 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
   var SOURCE = function(p){ return p.type === 'slides' ? 'https://docs.google.com/presentation/d/' + p.id + '/view' : 'https://drive.google.com/file/d/' + p.id + '/view'; };
   var EMBED = function(p){ return p.type === 'slides' ? 'https://docs.google.com/presentation/d/' + p.id + '/embed?start=false&loop=false' : 'https://drive.google.com/file/d/' + p.id + '/preview'; };
 
-  // ── DATA: the faculty member's showrooms and studios ──
+  // ── DATA: showrooms and studios ──
   var DA321_TEAMS = ['Vietnam’s Climate-Tech Ecosystem', 'Korea in East Asian Ceramics', 'Spatial Audio from Natural Language', 'Accessible Bladder Data Visualization', 'Income Distribution and Household Consumption in China', 'Global Brands’ Marketing Across Markets', 'K-pop Comeback Success', 'Seoul Scout', 'The Searcher’s Workbench'];
   var ROOMS = [
-    { key: 'brain', name: '뇌과학 아카데미 특강', ctx: 'Data Science & AI · for high-school students', tone: '#16233F', host: '곽지영 교수', audience: 'public',
+    { key: 'brain', name: '뇌과학 아카데미 특강', ctx: 'Data Science & AI · for high-school students', tone: '#16233F', host: '곽지영 교수', hosts: ['b3154590ea5dc4b3f5ba57afc42ab6c092a10711fcf3c201ba0989d2c2d9e64d'], exhibitors: [], audience: 'public',
       sessions: [{ name: '특강 기간', when: 'Oct 26 – Nov 6, 2026', open: d('2026-10-19'), from: d('2026-10-26'), to: d('2026-11-07') }],
       facts: [['What', '고교생 대상 뇌과학 아카데미의 Data Science & AI 특강. 뇌를 모방한 신경망에서 언어 모델까지, 두 주 동안 여섯 차시.'], ['Booths', 'One per week · lecture videos and slides'], ['Audience', 'Anyone with the link, no sign-in needed (unless an invitation says otherwise)'], ['Pieces play in', 'Google Drive for videos · Google Slides for decks']],
       progress: { 'On stage': 'Lessons open · participants and parents invited', 'Open': 'Lessons ready · opens Oct 26', 'Coming soon': 'Opens Oct 26', 'Past': 'Recordings and slides stay open' },
@@ -297,7 +302,7 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
             { key: 'w2s', type: 'slides', name: 'AI는 어떻게 대화하는가', part: 'Slides · all three lessons', src: 'Google Slides', img: 'img/w2-slides.png', id: '1UvkCOd2Mv8MSArCVtBUtIsDVLj1XdqIbA8EtVxIbGJg' }
           ] }
       ] },
-    { key: 'da321', name: 'Project Demo and Presentation', ctx: 'DA321 Data Analytics and Visualization · Fall 2026', tone: '#123B37', host: '곽지영 교수', audience: 'class', course: 'DA321', roster: [],
+    { key: 'da321', name: 'Project Demo and Presentation', ctx: 'DA321 Data Analytics and Visualization · Fall 2026', tone: '#123B37', host: '곽지영 교수', hosts: ['b3154590ea5dc4b3f5ba57afc42ab6c092a10711fcf3c201ba0989d2c2d9e64d'], exhibitors: [], audience: 'class', course: 'DA321', roster: [],
       sessions: [
         { name: 'EDA workshop', when: 'Oct 5 & 7', open: d('2026-09-28'), from: d('2026-10-05'), to: d('2026-10-08') },
         { name: 'Data-analytics case study', when: 'Nov 2', open: d('2026-10-12'), from: d('2026-11-02'), to: d('2026-11-03') },
@@ -307,15 +312,15 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
       facts: [['Booths', 'One per DA321 team, sent from its studio'], ['Audience', 'Class at every session · outside guests at Demo Day'], ['Reactions', 'Comments · audience vote at Demo Day'], ['In this version', 'Team work is not connected yet']],
       progress: { 'On stage': 'Appraisal open', 'Open': 'Teams are sending work', 'Coming soon': 'Opens for work soon', 'Past': 'All sessions shown' },
       booths: DA321_TEAMS.map(function(t, i){ return { key: 'da321-t' + (i + 1), label: 'Team ' + (i + 1), name: t, people: [['Team', 'Team ' + (i + 1)]], prog: '', pieces: [] }; }) },
-    { key: 'airshow', name: 'AIRshow', ctx: 'AIR Project · Fall 2026', tone: '#3A2A12', host: 'AIR Project', audience: 'taejae',
+    { key: 'airshow', name: 'AIRshow', ctx: 'AIR Project · Fall 2026', tone: '#3A2A12', host: 'AIR Project', hosts: ['b3154590ea5dc4b3f5ba57afc42ab6c092a10711fcf3c201ba0989d2c2d9e64d'], exhibitors: [], audience: 'taejae',
       sessions: [{ name: 'Showcase', when: '[DATE]', open: d('2099-01-01'), from: d('2099-01-01'), to: d('2099-01-02') }],
       facts: [['What', 'Advanced Independent Research: student teams define their own questions and build their own answers'], ['Booths', 'AIR teams, by open call'], ['Audience', 'Taejae community'], ['Awards', 'Innovative Research and Real-world Impact (faculty committee) · Outstanding Presentation (community vote)']],
       progress: { 'Coming soon': 'Booths by open call' },
       booths: [] }
   ];
   var STUDIOS = [
-    { group: 'Your studio', meta: 'Your own lectures and projects · private until you send them to a showroom', items: [{ who: '곽지영 교수', name: '뇌과학 아카데미 강의', note: 'Sent to 뇌과학 아카데미 특강', imgs: ['img/w1-l1.png', 'img/w1-slides.png', 'img/w2-slides.png'], href: '#s/brain' }] },
-    { group: 'DA321 Data Analytics and Visualization · Fall 2026', meta: '9 team studios', items: DA321_TEAMS.map(function(t, i){ return { who: 'Team ' + (i + 1), name: t, note: 'Studio not connected yet', imgs: [] }; }) }
+    { group: 'Your studio', meta: 'Your own lectures and projects · private until you send them to a showroom', owner: 'b3154590ea5dc4b3f5ba57afc42ab6c092a10711fcf3c201ba0989d2c2d9e64d', items: [{ who: '곽지영 교수', name: '뇌과학 아카데미 강의', note: 'Sent to 뇌과학 아카데미 특강', imgs: ['img/w1-l1.png', 'img/w1-slides.png', 'img/w2-slides.png'], href: '#s/brain' }] },
+    { group: 'DA321 Data Analytics and Visualization · Fall 2026', meta: '9 team studios', hostOf: 'da321', items: DA321_TEAMS.map(function(t, i){ return { who: 'Team ' + (i + 1), name: t, note: 'Studio not connected yet', imgs: [] }; }) }
   ];
 
   // ── STATE OF A SHOWROOM FROM TODAY'S DATE ──
@@ -343,7 +348,7 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
     var a = audienceOf(r);
     if (a === 'public') return true;
     if (!sbUser) return false;
-    if (a === 'class' && r.roster && r.roster.length) return r.roster.indexOf(String(PROFESSOR && PROFESSOR.email).toLowerCase()) >= 0 || (PROFESSOR && PROFESSOR.name && r.host.indexOf(PROFESSOR.name) >= 0);
+    if (a === 'class' && r.roster && r.roster.length) return r.roster.indexOf(String(PROFESSOR && PROFESSOR.email).toLowerCase()) >= 0 || roleIn(r) !== 'visitor';
     return true;
   }
   var audLine = function(r, a){ return a === 'public' ? 'Open to anyone with the link' : a === 'class' ? 'For the ' + (r.course || 'class') + ' class · sign in with a Taejae account' : 'For Taejae members · sign in with a Taejae account'; };
@@ -359,17 +364,12 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
     return null;
   }
 
-  // ── HEADER: signed-in faculty get Ergon; a visitor on a public showroom sees only Taejae and the showroom ──
+  // ── HEADER: everyone signed in gets Ergon; a visitor without sign-in sees only Taejae and the showroom ──
   function header(where, publicRoom){
     var top = $('top');
     var hostLink = '<a class="hostname" href="#s/' + (publicRoom ? publicRoom.key : '') + '">태재대학교' + (publicRoom ? ' · <b>' + esc(publicRoom.name) + '</b>' : '') + '</a>';
     if (!sbUser || !PROFESSOR) { top.innerHTML = '<div class="wrap">' + hostLink + '</div>'; return; }
     var initials = String(PROFESSOR.name || '').split(/\s+/).map(function(w){ return w[0]; }).join('').slice(0, 2).toUpperCase() || '–';
-    if (!isFaculty()) {
-      top.innerHTML = '<div class="wrap">' + hostLink + '<span class="me" style="margin-left:auto"><button type="button" id="me-btn" aria-haspopup="true" aria-expanded="false" aria-label="Account: ' + esc(PROFESSOR.name) + '">' + esc(initials) + '</button>' +
-        '<span class="menu" id="me-menu" hidden><span class="who" style="display:block">' + esc(PROFESSOR.name) + '<small>' + esc(PROFESSOR.email) + '</small></span><button type="button" data-act="pw">Change password</button><button type="button" data-act="out">Sign out</button></span></span></div>';
-      return;
-    }
     var item = function(href, label, key){ return '<a href="' + href + '"' + (where === key ? ' aria-current="page"' : '') + '>' + label + '</a>'; };
     top.innerHTML = '<div class="wrap"><a class="brand" href="#home">Ergon</a><nav aria-label="Main">' +
       item('#about', 'About', 'about') + item('#home', 'Showrooms', 'showrooms') + item('#studios', 'Studios', 'studios') + item('#settings', 'Settings', 'settings') + '</nav>' +
@@ -377,7 +377,7 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
       '<span class="menu" id="me-menu" hidden><span class="who" style="display:block">' + esc(PROFESSOR.name) + '<small>' + esc(PROFESSOR.email) + '</small></span>' +
       '<button type="button" data-act="pw">Change password</button><button type="button" data-act="out">Sign out</button></span></span></div>';
   }
-  var foot = function(){ return '<div class="foot gut"><div class="wrap"><div>' + (isFaculty() ? 'Ergon · Taejae University' : 'Taejae University · shown with Ergon') + '</div>' +
+  var foot = function(){ return '<div class="foot gut"><div class="wrap"><div>' + (signedIn() ? 'Ergon · Taejae University' : 'Taejae University · shown with Ergon') + '</div>' +
     '<div style="margin-top:6px">Created by Jiyoung Kwahk, Ph.D. · © ' + new Date().getFullYear() + ' Jiyoung Kwahk. All rights reserved.</div></div></div>'; };
 
   // ── HOME ──
@@ -404,7 +404,10 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
     h += ROOMS.map(function(r){ var c = roomCard(r); return '<a class="rtile" href="#s/' + r.key + '" style="background:' + r.tone + '"><span class="state" style="color:rgba(255,255,255,.85)"><span class="chip" style="background:' + chipBg(c.st) + '">' + c.st + '</span><span>' + esc(c.when) + '</span></span><span class="rs">' + esc(r.ctx) + '</span><span class="rn">' + esc(r.name) + '</span><span class="rm">' + esc(c.meta) + '</span></a>'; }).join('');
     h += '</div></section>';
     h += '<section class="sec" aria-labelledby="studios-h" id="studios-sec"><div class="sec-h"><h2 id="studios-h">Studios</h2><button type="button" class="hadd" data-new="studio">+ Open a studio</button></div>';
-    STUDIOS.forEach(function(g){
+    var me = PROFESSOR && PROFESSOR.id;
+    STUDIOS.filter(function(g){ return g.owner ? g.owner === me : g.hostOf ? roleIn(find('s', g.hostOf).room) === 'host' : true; }).concat(
+      STUDIOS.some(function(g){ return g.owner && g.owner === me; }) ? [] : [{ group: 'Your studio', meta: 'Your own lectures and projects · private until you send them to a showroom', items: [{ who: PROFESSOR ? PROFESSOR.name : '', name: 'Nothing here yet', note: 'Add a lecture, a project or your team’s work', imgs: [] }] }]
+    ).forEach(function(g){
       h += '<div class="group"><b>' + esc(g.group) + '</b><span class="lbl">' + esc(g.meta) + '</span></div><div class="tiles">';
       h += g.items.map(function(o){
         var inner = mosaic(o.imgs.map(function(src){ return '<img src="' + src + '" alt="">'; })) +
@@ -436,19 +439,21 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
         ['Taejae', 'Anyone with a Taejae account, after sign-in'],
         ['Class', 'The course’s class, after sign-in. Class lists are not connected yet, so any Taejae account gets in for now.']
       ]) +
-      sec('a-roles', 'Who sees what', [
-        ['Faculty', 'Every page: Showrooms, Studios, Settings and Invite. Your own studio stays private until you send work to a showroom.'],
-        ['Invitees', 'Only the showroom they were invited to, with its booths and pieces. Those who sign in use the same Taejae email and password as faculty.']
+      sec('a-roles', 'Who does what', [
+        ['Everyone', 'Faculty and students sign in with the same Taejae email and password and get the same Ergon: Showrooms, Studios, Settings, and a private studio of their own.'],
+        ['Host', 'Runs a showroom: its sessions, booths and who can open it. Only the host sees Invite.'],
+        ['Exhibitor', 'Sends work from their studio to their own booth'],
+        ['Visitor', 'Views the showroom. Someone who opens a Public link without signing in sees only that showroom.']
       ]) +
       sec('a-check', 'Before you share', [
         ['Drive files', 'Set each video and deck to “Anyone with the link · Viewer”, or visitors see a Google sign-in page instead of the work'],
-        ['Sign-in', 'Your Taejae faculty email and password, the same account as Telos and TaeSylla']
+        ['Roles', 'Your role is set in each showroom, so a student can host one and a lecturer can visit another']
       ]));
   }
   function settingsHTML(){
     var u = PROFESSOR || {}, btn = 'min-height:42px;padding:0 16px;border:1px solid var(--fg);background:var(--bg);font-size:14px';
     return plainPage('Settings', 'Your Ergon account.',
-      '<section class="sec" aria-labelledby="s-prof"><div class="sec-h"><h2 id="s-prof">Profile</h2></div><dl class="facts"><dt>Name</dt><dd>' + esc(u.name) + '</dd><dt>Email</dt><dd>' + esc(u.email) + '</dd><dt>Profile source</dt><dd>Taejae faculty profile, shared with TaeSylla and Telos</dd></dl></section>' +
+      '<section class="sec" aria-labelledby="s-prof"><div class="sec-h"><h2 id="s-prof">Profile</h2></div><dl class="facts"><dt>Name</dt><dd>' + esc(u.name) + '</dd><dt>Email</dt><dd>' + esc(u.email) + '</dd><dt>Profile source</dt><dd>' + (u.isFaculty ? 'Taejae faculty profile, shared with TaeSylla and Telos' : 'Taejae account') + '</dd></dl></section>' +
       '<section class="sec" aria-labelledby="s-acc"><div class="sec-h"><h2 id="s-acc">Account</h2></div><div style="display:flex;flex-wrap:wrap;gap:10px"><button type="button" data-set="pw" style="' + btn + '">Change password</button><button type="button" data-set="out" style="' + btn + '">Sign out</button></div></section>' +
       '<section class="sec" aria-labelledby="s-sess"><div class="sec-h"><h2 id="s-sess">Session</h2></div><p style="margin:0;color:var(--muted);max-width:62ch">You stay signed in while this tab is open, and a refresh keeps you signed in. Closing the tab signs you out.</p></section>');
   }
@@ -462,7 +467,7 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
     return h + (tools || '') + '</div>';
   }
   // a visitor without sign-in starts the path at the showroom: they cannot go above it
-  var rootPath = function(r){ return isFaculty() ? [['Showrooms', '#home'], [r.name, '#s/' + r.key]] : [[r.name, '#s/' + r.key]]; };
+  var rootPath = function(r){ return signedIn() ? [['Showrooms', '#home'], [r.name, '#s/' + r.key]] : [[r.name, '#s/' + r.key]]; };
   function stageHTML(cfg){
     var s = cfg.stage;
     if (!s.length) return '<span class="shot"><span class="ph"><small>' + esc(cfg.empty) + '</small><b>' + esc(cfg.name) + '</b></span></span>';
@@ -471,7 +476,7 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
       '<div class="cap"><span><b>' + esc(it.p.name) + '</b> · ' + esc(it.sub) + '</span><span>' + (k + 1) + ' / ' + s.length + '</span></div>';
   }
   function page(cfg){
-    var h = '<section class="poster gut" style="--tone:' + cfg.tone + '" aria-label="' + esc(cfg.name) + '"><div class="wrap">' + crumb(cfg.path, cfg.sib, cfg.invite && isFaculty() ? '<button type="button" class="ibtn" data-invite="' + cfg.invite + '">Invite</button>' : '') +
+    var h = '<section class="poster gut" style="--tone:' + cfg.tone + '" aria-label="' + esc(cfg.name) + '"><div class="wrap">' + crumb(cfg.path, cfg.sib, cfg.invite && roleIn(find('s', cfg.invite).room) === 'host' ? '<button type="button" class="ibtn" data-invite="' + cfg.invite + '">Invite</button>' : '') +
       '<div class="pgrid"><div class="id"><div class="state"><span class="chip" style="background:' + chipBg(cfg.state) + '">' + cfg.state + '</span><span>' + esc(cfg.when) + '</span></div>' +
       '<div class="ctx">' + esc(cfg.ctx) + '</div><h1>' + esc(cfg.name) + '</h1>' + (cfg.prog ? '<div class="prog">' + esc(cfg.prog) + '</div>' : '') +
       '<dl class="idl">' + cfg.dl.map(function(x){ return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd>'; }).join('') + '</dl>' +
@@ -488,7 +493,7 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
   }
   function showroomCfg(r){
     var s = lead(r), st = stateOf(s);
-    return { invite: r.key, tone: r.tone, path: isFaculty() ? [['Showrooms', '#home'], [r.name, null]] : [[r.name, null]], state: st, when: r.sessions.length > 1 ? s.name + ' · ' + s.when : s.when, ctx: r.ctx, name: r.name,
+    return { invite: r.key, tone: r.tone, path: signedIn() ? [['Showrooms', '#home'], [r.name, null]] : [[r.name, null]], state: st, when: r.sessions.length > 1 ? s.name + ' · ' + s.when : s.when, ctx: r.ctx, name: r.name,
       prog: r.progress[st] || '', dl: [['Host', r.host], ['Booths', plural(r.booths.length, 'booth')]], sessions: r.sessions, lead: s,
       stage: allPieces(r).map(function(x){ return { p: x.p, sub: x.b.label + ' · ' + x.p.part }; }), empty: r.booths.length ? 'Nothing sent yet' : 'Booths appear here as teams send work',
       tilesTitle: 'Booths', noTiles: 'Booths appear here as teams send work', facts: r.facts, factsTitle: 'About this showroom',
@@ -537,11 +542,6 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
       app.innerHTML = gateHTML(f.room); document.title = f.room.name + ' · Ergon'; window.scrollTo(0, 0); return;
     }
     if (!sbUser && !f) { header(''); app.innerHTML = ''; wallFor(null); showWall(true); return; }
-    if (sbUser && PROFESSOR && !isFaculty() && !f) {   // a signed-in member asking for a faculty page goes back to the showroom they came for
-      var last = null; try { last = sessionStorage.getItem('ergon_last_room'); } catch (e) {}
-      if (last && find('s', last)) { location.replace('#s/' + last); return; }
-      header(''); showWall(false); app.innerHTML = '<section class="poster gut" style="--tone:#2A2A30"><div class="wrap"><div class="pgrid" style="margin-top:28px;min-height:240px"><div class="id"><h1>Ergon</h1><div class="prog">You are signed in as ' + esc(PROFESSOR.email) + '. Open a showroom from the link you were sent.</div></div></div></div></section>' + foot(); return;
-    }
     showWall(false);
     if (f && kind === 'p') { header('showrooms', f.room); app.innerHTML = leafHTML(f.room, f.booth, f.piece, f.k); document.title = f.piece.name + ' · Ergon'; }
     else if (f && kind === 'b') {
@@ -743,7 +743,7 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
   $('wall-cancel').addEventListener('click', function(){ showWall(false); });
   function toast(msg){ var t = $('toast'); t.textContent = msg; t.hidden = false; setTimeout(function(){ t.hidden = true; }, 2500); }
 
-  // After sign-in, or after a refresh that restored the session: the faculty profile decides the name and the first-sign-in password step
+  // After sign-in, or after a refresh that restored the session: the faculty profile, if there is one, gives the name and the first-sign-in password step
   function enterApp(email){
     var authEmail = String((sbUser.user && sbUser.user.email) || email).trim().toLowerCase();
     return fetch(SUPABASE_URL + '/rest/v1/faculty_profiles?email=eq.' + encodeURIComponent(authEmail) + '&select=name_en,email,program,must_change_password', { headers: authHeaders() })
@@ -751,8 +751,10 @@ dialog.inv::backdrop{background:rgba(10,12,18,.55)}
       .then(function(rows){
         var p = Array.isArray(rows) && rows[0];
         PROFESSOR = { name: (p && p.name_en) || (sbUser.user && sbUser.user.user_metadata && sbUser.user.user_metadata.full_name) || authEmail.split('@')[0], email: authEmail, isFaculty: !!p };
+        return sha256(authEmail).then(function(h){ PROFESSOR.id = h; }, function(){}).then(function(){
         render();
         if (p && p.must_change_password === true) showPwWall('first');
+        });
       });
   }
   $('login-form').addEventListener('submit', function(e){

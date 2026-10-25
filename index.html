@@ -908,7 +908,19 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
   // and signing out of one signs out of all of them.
   var SUITE_KEY = 'paideia_session';
   var SUITE_KEYS = ['paideia_session', 'telos_faculty_session', 'telos_student_session', 'taesylla_session', 'ergon_session', 'paideia_gcal'];
-  function saveSession(){ try { var v = JSON.stringify(sbUser); sessionStorage.setItem(SESSION_KEY, v); sessionStorage.setItem(SUITE_KEY, v); } catch (e) {} }
+  // Tabs opened from Paideia start with a copy of one session. Supabase rotates the refresh token on every renewal,
+  // so a tab hands each renewed session to the other suite tabs (same origin), and takes a newer one for the same
+  // person from them. Without this, the next tab to renew would be refused and the session revoked.
+  var SUITE_CH = 'BroadcastChannel' in window ? new BroadcastChannel('paideia_suite') : null;
+  function saveSession(quiet){
+    try { var v = JSON.stringify(sbUser); sessionStorage.setItem(SESSION_KEY, v); sessionStorage.setItem(SUITE_KEY, v); } catch (e) {}
+    if (!quiet && SUITE_CH && sbUser) SUITE_CH.postMessage({ session: sbUser });
+  }
+  if (SUITE_CH) SUITE_CH.onmessage = function(e){
+    var s = e.data && e.data.session, me = sbUser && sbUser.user && sbUser.user.email;
+    if (!s || !s.access_token || !me || !s.user || s.user.email !== me || (s.expires_at || 0) <= (sbUser.expires_at || 0)) return;
+    sbUser = s; saveSession(true);
+  };
   function clearSession(){ try { SUITE_KEYS.forEach(function(k){ sessionStorage.removeItem(k); }); } catch (e) {} }
   // The newer of this app's own session and the shared one: a token renewed in another app wins.
   function newestSession(){

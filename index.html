@@ -903,8 +903,18 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
 
   // ── SESSION (same as Telos and TaeSylla) ──
   // sessionStorage, not localStorage: a refresh keeps you signed in, closing the tab does not.
-  function saveSession(){ try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(sbUser)); } catch (e) {} }
-  function clearSession(){ try { sessionStorage.removeItem(SESSION_KEY); } catch (e) {} }
+  // Paideia: the suite apps share this origin, so each also keeps the session under one shared key.
+  // Signing in once (on the Paideia page or in any app) carries over to the others in the same tab,
+  // and signing out of one signs out of all of them.
+  var SUITE_KEY = 'paideia_session';
+  var SUITE_KEYS = ['paideia_session', 'telos_faculty_session', 'telos_student_session', 'taesylla_session', 'ergon_session', 'paideia_gcal'];
+  function saveSession(){ try { var v = JSON.stringify(sbUser); sessionStorage.setItem(SESSION_KEY, v); sessionStorage.setItem(SUITE_KEY, v); } catch (e) {} }
+  function clearSession(){ try { SUITE_KEYS.forEach(function(k){ sessionStorage.removeItem(k); }); } catch (e) {} }
+  // The newer of this app's own session and the shared one: a token renewed in another app wins.
+  function newestSession(){
+    return [SESSION_KEY, SUITE_KEY].map(function(k){ try { return JSON.parse(sessionStorage.getItem(k) || 'null'); } catch (e) { return null; } })
+      .filter(function(x){ return x && x.access_token; }).sort(function(a, b){ return (b.expires_at || 0) - (a.expires_at || 0); })[0] || null;
+  }
   // Access tokens last about an hour: renew with the refresh token when one is nearly out.
   var refreshing = null;
   function sbFresh(){
@@ -983,10 +993,9 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
   function signOut(){ sbUser = null; PROFESSOR = null; clearSession(); location.hash = '#home'; render(); }
 
   // Start: restore a saved session, else show whatever needs no sign-in
-  var saved = null;
-  try { saved = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null'); } catch (e) { saved = null; }
+  var saved = newestSession();
   if (saved && saved.access_token) {
-    sbUser = saved;
+    sbUser = saved; saveSession();
     sbFresh().then(function(ok){ if (ok) return enterApp(''); sbUser = null; clearSession(); render(); });
   } else render();
 })();

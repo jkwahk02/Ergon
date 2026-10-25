@@ -555,8 +555,12 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
   }
 
   // ── ABOUT AND SETTINGS ──
+  // the page header shared by About, Settings, Showrooms and Studios: a band in Ergon orange
+  function pageHead(title, lead){
+    return '<section class="poster gut" style="--tone:#B45309"><div class="wrap"><div class="pgrid" style="margin-top:28px"><div class="id"><h1>' + title + '</h1><div class="prog">' + lead + '</div></div></div></div></section>';
+  }
   function plainPage(title, lead, body){
-    return '<section class="poster gut" style="--tone:#2A2A30"><div class="wrap"><div class="pgrid" style="margin-top:28px"><div class="id"><h1>' + title + '</h1><div class="prog">' + lead + '</div></div></div></div></section>' +
+    return pageHead(title, lead) +
       '<div class="gut"><div class="wrap">' + body + '</div></div>' + foot();
   }
   function aboutHTML(){
@@ -695,6 +699,9 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
       else {
         [$('deck'), app.querySelector('.dots'), tab === 'showrooms' ? $('studios-sec') : ($('rooms-h') && $('rooms-h').closest('section'))]
           .forEach(function(el){ if (el) el.remove(); });
+        app.insertAdjacentHTML('afterbegin', tab === 'studios'
+          ? pageHead('Studios', 'Where work is kept. You have a studio for your own lectures and projects, and each course team has one.')
+          : pageHead('Showrooms', 'Displays of work for an event and an audience, such as a project presentation or a lecture series.'));
         document.title = (tab === 'studios' ? 'Studios' : 'Showrooms') + ' · ' + appName();
       }
     }

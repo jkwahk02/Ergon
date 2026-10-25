@@ -384,7 +384,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
       .sort(function(a, b){ return a.sort_order - b.sort_order; }).map(function(b){
         var ex = (b.ergon_booth_exhibitors || []).map(function(x){ return x.email; });
         var ps = (b.ergon_booth_entries || []).filter(function(e){ return !e.withdrawn_at && e.ergon_pieces; }).map(function(e){ return pieceOf(e.ergon_pieces); });
-        return { key: 'b' + b.booth_id, boothId: b.booth_id, label: b.label, name: b.title, prog: b.summary || '', exhibitorEmails: ex,
+        return { key: 'b' + b.booth_id, boothId: b.booth_id, studioId: b.studio_id, label: b.label, name: b.title, prog: b.summary || '', exhibitorEmails: ex,
           people: [['Exhibitors', ex.length ? plural(ex.length, 'person') : 'Not assigned yet']], pieces: ps,
           when: b.from_on ? whenOf(b.from_on, b.to_on) : '', from: b.from_on ? d(b.from_on) : null, to: b.from_on ? dayAfter(b.to_on || b.from_on) : null };
       });
@@ -402,7 +402,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     return Promise.all([
       rest('ergon_showrooms?select=showroom_id,title,subtitle,tone,offering_id,audience,facts,ergon_showroom_hosts(email),' +
         'ergon_sessions(name,sort_order,is_draft,opens_on,locks_on,stage_from,stage_to),' +
-        'ergon_booths(booth_id,label,title,summary,sort_order,hidden,from_on,to_on,ergon_booth_exhibitors(email),ergon_booth_entries(withdrawn_at,ergon_pieces(piece_id,kind,title,part,url,provider,file_id,thumbnail_url)))&order=showroom_id'),
+        'ergon_booths(booth_id,label,title,summary,sort_order,hidden,from_on,to_on,studio_id,ergon_booth_exhibitors(email),ergon_booth_entries(withdrawn_at,ergon_pieces(piece_id,kind,title,part,url,provider,file_id,thumbnail_url)))&order=showroom_id'),
       rest('ergon_studios?select=studio_id,title,offering_id,team_label,ergon_studio_members(email),ergon_pieces(kind,thumbnail_url)&archived_at=is.null&order=studio_id')
     ]).then(function(res){
       var rooms = res[0], studios = res[1], hostEmails = [];
@@ -417,9 +417,11 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
         var me = PROFESSOR.email, groups = {}, order = [];
         studios.forEach(function(s){
           var mine = (s.ergon_studio_members || []).some(function(m){ return m.email === me; });
-          var room = dbRooms.filter(function(r){ return r.offeringId && r.offeringId === s.offering_id; })[0];
-          var gk = s.offering_id && !mine ? 'o' + s.offering_id : 'mine';
-          if (!groups[gk]) { groups[gk] = { group: gk === 'mine' ? 'Your teams' : (room ? room.ctx : 'Course studios'), meta: '', teamsOf: gk !== 'mine' && room ? room.key : null, items: [] }; order.push(gk); }
+          // the showroom this studio exhibits in: its course showroom, else the one whose booth it feeds
+          var room = dbRooms.filter(function(r){ return r.offeringId && r.offeringId === s.offering_id; })[0]
+                  || dbRooms.filter(function(r){ return r.booths.some(function(b){ return b.studioId === s.studio_id; }); })[0];
+          var gk = mine ? 'mine' : room ? room.key : 'other';
+          if (!groups[gk]) { groups[gk] = { group: gk === 'mine' ? 'Your teams' : room ? (room.ctx || room.name) : 'Other studios', meta: '', teamsOf: room && room.offeringId && gk !== 'mine' ? room.key : null, items: [] }; order.push(gk); }
           var n = (s.ergon_studio_members || []).length;
           groups[gk].items.push({ who: s.team_label || 'Studio', name: s.title, note: n ? plural(n, 'member') : 'No members yet',
             imgs: (s.ergon_pieces || []).map(function(p){ return p.thumbnail_url; }).filter(Boolean) });

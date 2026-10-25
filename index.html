@@ -252,7 +252,14 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:60;padding:10px 16px;background:var(--fg);color:var(--bg);font-size:14px}
 .toast[hidden]{display:none}
 @media (prefers-reduced-motion: reduce){.shot img{animation:none}.card{transition:none}}
+
+/* logo and title as on Paideia: Marcellus 25 px with a 16 px keyword after a middle dot */
+.nav-logo{font-family:'Marcellus','Times New Roman',serif;font-size:25px;font-weight:400;letter-spacing:.06em;gap:12px;}
+.nav-logo .app-logo{width:34px;height:34px;}
+.nav-logo .role-badge{font-family:'Marcellus','Times New Roman',serif;font-size:16px;font-weight:400;letter-spacing:.03em;text-transform:none;background:none;color:var(--muted);padding:0;border-radius:0;}
+.nav-logo .role-badge::before{content:'· ';}
 </style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&display=swap">
 </head>
 <body>
 <header class="top gut" id="top"></header>
@@ -499,10 +506,10 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     if (!sbUser || !PROFESSOR) { top.innerHTML = '<div class="wrap">' + hostLink + '</div>'; return; }
     var initials = String(PROFESSOR.name || '').split(/\s+/).map(function(w){ return w[0]; }).join('').slice(0, 2).toUpperCase() || '–';
     var item = function(href, label, key){ return '<a href="' + href + '"' + (where === key ? ' aria-current="page"' : '') + '>' + label + '</a>'; };
-    top.innerHTML = '<div class="wrap"><a class="nav-logo" href="#home"><svg class="app-logo" viewBox="0 0 76 76" aria-hidden="true"><rect width="76" height="76" rx="18" fill="#B45309"/><polygon points="27,24 50,21 56,52 21,55" stroke="#fff" stroke-opacity=".6" stroke-width="2.5" fill="none"/><g fill="#fff"><circle cx="27" cy="24" r="3.8"/><circle cx="50" cy="21" r="3.8"/><circle cx="56" cy="52" r="4.4"/><circle cx="21" cy="55" r="3.8"/></g></svg>Ergon' + (PROFESSOR.isFaculty ? ' Pro' : '') + ' <span class="role-badge">' + (PROFESSOR.isFaculty ? 'Faculty' : 'Student') + '</span></a><nav aria-label="Main">' +
+    top.innerHTML = '<div class="wrap"><a class="nav-logo" href="#home"><svg class="app-logo" viewBox="0 0 76 76" aria-hidden="true"><rect width="76" height="76" rx="18" fill="#B45309"/><polygon points="27,24 50,21 56,52 21,55" stroke="#fff" stroke-opacity=".6" stroke-width="2.5" fill="none"/><g fill="#fff"><circle cx="27" cy="24" r="3.8"/><circle cx="50" cy="21" r="3.8"/><circle cx="56" cy="52" r="4.4"/><circle cx="21" cy="55" r="3.8"/></g></svg>Ergon' + (PROFESSOR.isFaculty ? ' Pro' : '') + '</a><nav aria-label="Main">' +
       item('#home', 'Home', 'home') + item('#showrooms', 'Showrooms', 'showrooms') + item('#studios', 'Studios', 'studios') + item('#about', 'About', 'about') + item('#settings', 'Settings', 'settings') + '</nav>' +
       '<div class="nav-right"><span class="me"><button type="button" id="me-btn" aria-haspopup="true" aria-expanded="false" aria-label="Account: ' + esc(PROFESSOR.name) + '">' +
-      '<span class="nav-avatar">' + esc(initials) + '</span><span class="nav-name">' + esc(PROFESSOR.name) + '</span><span class="caret">▾</span></button>' +
+      '<span class="nav-avatar">' + esc(initials) + '</span><span class="nav-name">' + esc(PROFESSOR.name) + '</span><span class="role-badge">' + (PROFESSOR.isFaculty ? 'Faculty' : 'Student') + '</span><span class="caret">▾</span></button>' +
       '<span class="menu" id="me-menu" hidden><span class="who"><b>' + esc(PROFESSOR.name) + '</b><span>' + (PROFESSOR.isFaculty ? 'Professor' : 'Student') + '</span><span>' + esc(PROFESSOR.email) + '</span></span>' +
       '<button type="button" data-act="pw"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;"><rect x="2" y="9" width="12" height="5" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M5 9V6a3 3 0 0 1 6 0v3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>Change password</button><span class="div"></span><button type="button" data-act="out"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;"><path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Sign out</button></span></span></div></div>';
   }

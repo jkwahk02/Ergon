@@ -34,8 +34,8 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
 /* header, measured on Telos: 58 px sticky bar, 28 px logo, 18.5 px title and tabs, avatar + name for the account */
 header.top{border-bottom:1px solid var(--line);background:var(--bg);position:sticky;top:0;z-index:30;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px))}
 header.top .wrap{display:flex;align-items:center;height:58px;max-width:none;gap:0}
-.nav-logo{display:inline-flex;align-items:center;gap:9px;font-size:18.5px;font-weight:600;letter-spacing:-0.02em;margin-right:28px;white-space:nowrap;text-decoration:none}
-.nav-logo .app-logo{width:28px;height:28px;flex:none;display:block}
+.nav-logo{display:inline-flex;align-items:center;gap:10px;font-size:22px;font-weight:700;letter-spacing:-0.02em;margin-right:28px;white-space:nowrap;text-decoration:none}
+.nav-logo .app-logo{width:34px;height:34px;flex:none;display:block}
 .role-badge{font-size:10px;font-weight:600;background:#FDF0E1;color:#B45309;padding:2px 7px;border-radius:20px;letter-spacing:.04em;text-transform:uppercase}
 header nav{display:flex;height:100%;overflow-x:auto;scrollbar-width:none}
 header nav a{display:flex;align-items:center;padding:0 17px;font-size:18.5px;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent;white-space:nowrap;transition:color .15s}
@@ -46,7 +46,10 @@ header nav a[aria-current="page"]{color:#B45309;border-bottom-color:#B45309;font
 .me>button{display:flex;align-items:center;gap:7px;padding:4px 6px;border:none;border-radius:8px;background:transparent}
 .me>button:hover{background:var(--tile)}
 .nav-avatar{width:32px;height:32px;border-radius:50%;background:#FDF0E1;color:#B45309;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
-.nav-name{font-size:13px;color:var(--muted);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-name{font-size:18.5px;color:var(--fg);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
+.menu .who{display:block;padding:12px 14px 10px;border-bottom:1px solid var(--line);max-width:300px}
+.menu .who span{display:block;font-size:15px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.menu .who b{display:block;font-size:17px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .me .caret{font-size:10px;color:var(--muted)}
 .menu{position:absolute;right:0;top:calc(100% + 6px);z-index:40;min-width:170px;padding:0;background:var(--bg);border:1px solid var(--line);border-radius:12px;overflow:hidden}
 .menu .who{display:block;padding:10px 14px 8px;border-bottom:1px solid var(--line);font-size:17px;font-weight:500}
@@ -500,7 +503,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
       item('#home', 'Home', 'home') + item('#showrooms', 'Showrooms', 'showrooms') + item('#studios', 'Studios', 'studios') + item('#about', 'About', 'about') + item('#settings', 'Settings', 'settings') + '</nav>' +
       '<div class="nav-right"><span class="me"><button type="button" id="me-btn" aria-haspopup="true" aria-expanded="false" aria-label="Account: ' + esc(PROFESSOR.name) + '">' +
       '<span class="nav-avatar">' + esc(initials) + '</span><span class="nav-name">' + esc(PROFESSOR.name) + '</span><span class="caret">▾</span></button>' +
-      '<span class="menu" id="me-menu" hidden>' +
+      '<span class="menu" id="me-menu" hidden><span class="who"><b>' + esc(PROFESSOR.name) + '</b><span>' + (PROFESSOR.isFaculty ? 'Professor' : 'Student') + '</span><span>' + esc(PROFESSOR.email) + '</span></span>' +
       '<button type="button" data-act="pw"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;"><rect x="2" y="9" width="12" height="5" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M5 9V6a3 3 0 0 1 6 0v3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>Change password</button><span class="div"></span><button type="button" data-act="out"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;"><path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Sign out</button></span></span></div></div>';
   }
   var foot = function(){ return '<div class="foot gut"><div class="wrap"><div>' + (signedIn() ? 'Ergon · Taejae University' : 'Taejae University · shown with Ergon') + '</div>' +

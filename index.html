@@ -475,13 +475,15 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
   }
 
   // ── HEADER: everyone signed in gets Ergon; a visitor without sign-in sees only Taejae and the showroom ──
+  // 'Ergon Pro' for faculty, 'Ergon' for students and guests (Pro marks the faculty versions of the suite apps)
+  function appName(){ return PROFESSOR && PROFESSOR.isFaculty ? 'Ergon Pro' : 'Ergon'; }
   function header(where, publicRoom){
     var top = $('top');
     var hostLink = '<a class="hostname" href="#s/' + (publicRoom ? publicRoom.key : '') + '">태재대학교' + (publicRoom ? ' · <b>' + esc(publicRoom.name) + '</b>' : '') + '</a>';
     if (!sbUser || !PROFESSOR) { top.innerHTML = '<div class="wrap">' + hostLink + '</div>'; return; }
     var initials = String(PROFESSOR.name || '').split(/\s+/).map(function(w){ return w[0]; }).join('').slice(0, 2).toUpperCase() || '–';
     var item = function(href, label, key){ return '<a href="' + href + '"' + (where === key ? ' aria-current="page"' : '') + '>' + label + '</a>'; };
-    top.innerHTML = '<div class="wrap"><a class="brand" href="#home">Ergon</a><nav aria-label="Main">' +
+    top.innerHTML = '<div class="wrap"><a class="brand" href="#home">Ergon' + (PROFESSOR.isFaculty ? ' Pro' : '') + '</a><nav aria-label="Main">' +
       item('#about', 'About', 'about') + item('#home', 'Showrooms', 'showrooms') + item('#studios', 'Studios', 'studios') + item('#settings', 'Settings', 'settings') + '</nav>' +
       '<span class="me"><button type="button" id="me-btn" aria-haspopup="true" aria-expanded="false" aria-label="Account: ' + esc(PROFESSOR.name) + '">' + esc(initials) + '</button>' +
       '<span class="menu" id="me-menu" hidden><span class="who" style="display:block">' + esc(PROFESSOR.name) + '<small>' + esc(PROFESSOR.email) + '</small></span>' +
@@ -650,19 +652,19 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     if (f) { try { sessionStorage.setItem('ergon_last_room', f.room.key); } catch (e) {} }
     if (f && !canView(f.room)) {
       header('', sbUser ? null : f.room); showWall(false);
-      app.innerHTML = gateHTML(f.room); document.title = f.room.name + ' · Ergon'; window.scrollTo(0, 0); return;
+      app.innerHTML = gateHTML(f.room); document.title = f.room.name + ' · ' + appName(); window.scrollTo(0, 0); return;
     }
     if (!sbUser && !f) { header(''); app.innerHTML = ''; wallFor(null); showWall(true); return; }
     showWall(false);
-    if (f && kind === 'p') { header('showrooms', f.room); app.innerHTML = leafHTML(f.room, f.booth, f.piece, f.k); document.title = f.piece.name + ' · Ergon'; }
+    if (f && kind === 'p') { header('showrooms', f.room); app.innerHTML = leafHTML(f.room, f.booth, f.piece, f.k); document.title = f.piece.name + ' · ' + appName(); }
     else if (f && kind === 'b') {
       if (f.booth.pieces.length === 1) { location.replace('#p/' + f.booth.pieces[0].key); return; }   // a single-piece booth opens on its piece
-      header('showrooms', f.room); current = boothCfg(f.room, f.booth, f.j); app.innerHTML = page(current); document.title = f.booth.name + ' · Ergon';
+      header('showrooms', f.room); current = boothCfg(f.room, f.booth, f.j); app.innerHTML = page(current); document.title = f.booth.name + ' · ' + appName();
     }
-    else if (f && kind === 's') { header('showrooms', f.room); current = showroomCfg(f.room); app.innerHTML = page(current); document.title = f.room.name + ' · Ergon'; }
-    else if (kind === 'about') { header('about'); app.innerHTML = aboutHTML(); document.title = 'About · Ergon'; }
-    else if (kind === 'settings') { header('settings'); app.innerHTML = settingsHTML(); document.title = 'Settings · Ergon'; }
-    else { header(kind === 'studios' ? 'studios' : 'showrooms'); app.innerHTML = homeHTML(); placeDeck(); document.title = 'Ergon — Taejae University Showrooms'; current = 'home';
+    else if (f && kind === 's') { header('showrooms', f.room); current = showroomCfg(f.room); app.innerHTML = page(current); document.title = f.room.name + ' · ' + appName(); }
+    else if (kind === 'about') { header('about'); app.innerHTML = aboutHTML(); document.title = 'About · ' + appName(); }
+    else if (kind === 'settings') { header('settings'); app.innerHTML = settingsHTML(); document.title = 'Settings · ' + appName(); }
+    else { header(kind === 'studios' ? 'studios' : 'showrooms'); app.innerHTML = homeHTML(); placeDeck(); document.title = appName() + ' — Taejae University Showrooms'; current = 'home';
       if (kind === 'studios') { var el = $('studios-sec'); if (el) { el.scrollIntoView(); return; } } }
     window.scrollTo(0, 0);
   }

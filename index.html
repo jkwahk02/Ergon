@@ -501,7 +501,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
       '<div class="nav-right"><span class="me"><button type="button" id="me-btn" aria-haspopup="true" aria-expanded="false" aria-label="Account: ' + esc(PROFESSOR.name) + '">' +
       '<span class="nav-avatar">' + esc(initials) + '</span><span class="nav-name">' + esc(PROFESSOR.name) + '</span><span class="caret">▾</span></button>' +
       '<span class="menu" id="me-menu" hidden>' +
-      '<button type="button" data-act="out"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;"><path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Sign out</button></span></span></div></div>';
+      '<button type="button" data-act="pw"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;"><rect x="2" y="9" width="12" height="5" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M5 9V6a3 3 0 0 1 6 0v3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>Change password</button><span class="div"></span><button type="button" data-act="out"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;"><path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Sign out</button></span></span></div></div>';
   }
   var foot = function(){ return '<div class="foot gut"><div class="wrap"><div>' + (signedIn() ? 'Ergon · Taejae University' : 'Taejae University · shown with Ergon') + '</div>' +
     '<div style="margin-top:6px">Created by Jiyoung Kwahk, Ph.D. · © ' + new Date().getFullYear() + ' Jiyoung Kwahk. All rights reserved.</div></div></div>'; };
@@ -580,7 +580,6 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     var u = PROFESSOR || {}, btn = 'min-height:42px;padding:0 16px;border:1px solid var(--fg);background:var(--bg);font-size:14px';
     return plainPage('Settings', 'Your Ergon account.',
       '<section class="sec" aria-labelledby="s-prof"><div class="sec-h"><h2 id="s-prof">Profile</h2></div><dl class="facts"><dt>Name</dt><dd>' + esc(u.name) + '</dd><dt>Email</dt><dd>' + esc(u.email) + '</dd><dt>Profile source</dt><dd>' + (u.isFaculty ? 'Taejae faculty profile, shared with TaeSylla and Telos' : 'Taejae account') + '</dd></dl></section>' +
-      '<section class="sec" aria-labelledby="s-acc"><div class="sec-h"><h2 id="s-acc">Account</h2></div><div style="display:flex;flex-wrap:wrap;gap:10px"><button type="button" data-set="pw" style="' + btn + '">Change password</button><button type="button" data-set="out" style="' + btn + '">Sign out</button></div></section>' +
       '<section class="sec" aria-labelledby="s-sess"><div class="sec-h"><h2 id="s-sess">Session</h2></div><p style="margin:0;color:var(--muted);max-width:62ch">You stay signed in while this tab is open, and a refresh keeps you signed in. Closing the tab signs you out.</p></section>');
   }
 

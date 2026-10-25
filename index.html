@@ -25,14 +25,15 @@ a{color:inherit}
 button,input{font-family:inherit;color:inherit}
 button{cursor:pointer}
 button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
-.gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.wrap{max-width:1360px;margin:0 auto}
+/* full window width as on Paideia: no page max-width; side margins grow with the window, the same for the header and the page */
+.gut{padding-left:max(clamp(16px,4vw,80px),env(safe-area-inset-left,0px));padding-right:max(clamp(16px,4vw,80px),env(safe-area-inset-right,0px))}
+.wrap{margin:0 auto}
 .brand{font-weight:600;font-size:17px;text-decoration:none}
 .hostname{font-size:15px;text-decoration:none}
 .hostname b{font-weight:600}
 .signin{margin-left:auto;font-size:14px;text-decoration:underline;text-underline-offset:3px}
 /* header, measured on Telos: 58 px sticky bar, 28 px logo, 18.5 px title and tabs, avatar + name for the account */
-header.top{border-bottom:1px solid var(--line);background:var(--bg);position:sticky;top:0;z-index:30;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px))}
+header.top{border-bottom:1px solid var(--line);background:var(--bg);position:sticky;top:0;z-index:30;padding-left:max(clamp(16px,4vw,80px),env(safe-area-inset-left,0px));padding-right:max(clamp(16px,4vw,80px),env(safe-area-inset-right,0px))}
 header.top .wrap{display:flex;align-items:center;height:58px;max-width:none;gap:0}
 .nav-logo{display:inline-flex;align-items:center;gap:10px;font-size:22px;font-weight:700;letter-spacing:-0.02em;margin-right:28px;white-space:nowrap;text-decoration:none}
 .nav-logo .app-logo{width:34px;height:34px;flex:none;display:block}
@@ -58,7 +59,6 @@ header nav a[aria-current="page"]{color:#B45309;border-bottom-color:#B45309;font
 .menu button:hover{background:var(--tile)}
 .menu button[data-act="out"]{color:#C0392B}
 .menu .div{display:block;height:1px;background:var(--line);margin:3px 0}
-@media (max-width:760px){header nav a{padding:0 10px;font-size:15px}.nav-name,.nav-logo .role-badge{display:none}.nav-logo{margin-right:12px}}
 .lbl{font-size:12px;letter-spacing:.04em;color:var(--muted)}
 h1{margin:0;font-weight:300;letter-spacing:-.02em;line-height:1.08;text-wrap:balance}
 h2{margin:0;font-weight:500;font-size:15px}
@@ -191,6 +191,16 @@ a.tile:hover .t{text-decoration:underline;text-underline-offset:3px}
 .rtile .rn{margin-top:6px;font-weight:300;font-size:26px;line-height:1.1;letter-spacing:-.01em}
 .rtile .rm{margin-top:10px;font-size:13px;opacity:.9}
 .newtile{display:flex;align-items:center;justify-content:center;aspect-ratio:16/9;box-shadow:inset 0 0 0 1px var(--line);font-weight:300;font-size:32px;color:var(--muted)}
+.lbar{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;padding-top:32px}
+.lrole{min-height:40px;padding:0 16px;font-size:14px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
+.lrole.on{background:var(--accent);border-color:var(--accent);color:#FFFFFF}
+.under{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px;margin-top:12px;font-size:14px;color:var(--muted)}
+.under b{font-weight:500;color:var(--fg)}
+.under .hadd{min-height:0;font-size:13px}
+.addtile{display:flex;align-items:center;justify-content:center;width:100%;aspect-ratio:16/9;border:none;background:transparent;box-shadow:inset 0 0 0 1px var(--line);font-weight:300;font-size:34px;color:var(--muted)}
+.greet{margin:0;padding-top:28px}
+.greet-h{font-size:clamp(28px,2.6vw,36px);font-weight:600;letter-spacing:-0.01em;line-height:1.2}
+.greet-s{margin-top:6px;font-size:18px;color:var(--muted)}
 .empty{padding:28px 0;color:var(--muted)}
 .gatebtn{min-height:46px;padding:0 20px;border:none;background:#FFFFFF;color:#111111;font-size:15px;font-weight:500}
 .hadd{min-height:36px;padding:0 4px;border:none;background:transparent;font-size:14px;color:var(--fg);text-decoration:underline;text-underline-offset:3px}
@@ -258,6 +268,17 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
 .nav-logo .app-logo{width:34px;height:34px;}
 .nav-logo .role-badge{font-family:'Marcellus','Times New Roman',serif;font-size:16px;font-weight:400;letter-spacing:.03em;text-transform:none;background:none;color:var(--muted);padding:0;border-radius:0;}
 .nav-logo .role-badge::before{content:'· ';}
+/* phones: two rows, as in Telos and TaeSylla. Logo and avatar on top, tabs below in a row that scrolls sideways.
+   After the title rules above so it wins over them. */
+@media (max-width:760px){
+  header.top .wrap{height:auto;flex-wrap:wrap;padding-top:8px}
+  .nav-logo{font-size:20px;margin-right:auto;height:44px}
+  .nav-logo .app-logo{width:28px;height:28px}
+  .nav-name,.me .role-badge,.nav-right .role-badge,.nav-logo .role-badge{display:none}
+  header nav{order:3;width:100%;height:44px;overflow-x:auto;scrollbar-width:none}
+  header nav::-webkit-scrollbar{display:none}
+  header nav a{font-size:16px;padding:0 12px;flex:none}
+}
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&display=swap">
 </head>
@@ -461,6 +482,20 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
   var ORDER = { 'On stage': 0, 'Open': 1, 'Coming soon': 2, 'Past': 3 };
   function lead(room){ return room.sessions.slice().sort(function(a, b){ var x = ORDER[stateOf(a)], y = ORDER[stateOf(b)]; return x - y || (x === 3 ? b.from - a.from : a.from - b.from); })[0]; }
   var boothState = function(r, b){ return b.from ? stateOf({ open: b.from, from: b.from, to: b.to }) : stateOf(lead(r)); };
+  // A showroom is Prep (being set up; exhibitors send work), Live (the audience is in) or Past.
+  // Until the host's Open Show / Close Show and the Prep due date are stored, Live starts with the first
+  // session on stage and Past follows the last one. The date line says where the showroom is.
+  function statusOf(r){
+    if (r.status) return r.status;
+    var ss = r.sessions, first = ss.reduce(function(a, x){ return x.from < a ? x.from : a; }, ss[0].from), last = ss.reduce(function(a, x){ return x.to > a ? x.to : a; }, ss[0].to);
+    return now >= last ? 'Past' : now < first ? 'Prep' : 'Live';
+  }
+  function lineOf(r){
+    var s = lead(r), st = stateOf(s), many = r.sessions.length > 1 ? ' · ' + s.name : '';
+    if (!s.when || s.when === 'Date to be set') return 'Dates to be set';
+    return (st === 'On stage' ? 'Showing ' : st === 'Open' ? 'Send now · shows ' : st === 'Past' ? 'Shown ' : 'Shows ') + s.when + many;
+  }
+  var statusBg = { Live: '#F2C14E', Prep: 'rgba(255,255,255,.8)', Past: 'rgba(255,255,255,.5)' };
   var chipBg = function(st){ return st === 'On stage' ? '#F2C14E' : st === 'Open' ? '#FFFFFF' : st === 'Past' ? 'rgba(255,255,255,.5)' : 'rgba(255,255,255,.8)'; };
   var plural = function(n, w){ return n + ' ' + w + (n === 1 ? '' : 's'); };
   var playIcon = '<span class="play" aria-hidden="true"><svg viewBox="0 0 24 24" width="40%" height="40%" fill="#111111"><path d="M8 5l11 7-11 7z"/></svg></span>';
@@ -518,26 +553,34 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
 
   // ── HOME ──
   var deckIdx = 0, rot = 0, current = null;
-  function roomCard(r){ var s = lead(r), st = stateOf(s); return { r: r, st: st, when: r.sessions.length > 1 ? s.name + ' · ' + s.when : s.when, meta: r.progress[st] || '' }; }
+  function roomCard(r){ var s = lead(r), st = stateOf(s); return { r: r, st: st, status: statusOf(r), when: lineOf(r), meta: r.progress[st] || '' }; }
   function liveRooms(){ return ROOMS.map(roomCard).filter(function(c){ return c.st !== 'Past'; }).sort(function(a, b){ return ORDER[a.st] - ORDER[b.st]; }); }
   function cardStage(c){
     var r = c.r, pcs = allPieces(r), pc = pcs.length ? pcs[rot % pcs.length] : null;
     return '<a class="shot" href="' + (pc ? '#p/' + pc.p.key : '#s/' + r.key) + '">' + (pc ? visual(pc.p) + (pc.p.type === 'video' ? playIcon : '') : '<span class="ph"><small>' + esc(c.st) + '</small><b>Work appears here once booths fill</b></span>') + '</a>' +
       (pc ? '<div class="cap"><span><b>' + esc(pc.p.name) + '</b> · ' + esc(pc.b.label) + '</span><span>' + ((rot % pcs.length) + 1) + ' / ' + pcs.length + '</span></div>' : '');
   }
+  // the greeting every suite Home opens with: first name, today's date and the term
+  function greetHTML(){
+    var first = signedIn() && PROFESSOR && PROFESSOR.name ? String(PROFESSOR.name).trim().split(/\s+/)[0] : '';
+    var t = new Date(), m = t.getMonth() + 1, y = t.getFullYear();
+    var term = m >= 8 ? 'Fall ' + y : m === 7 ? 'Summer ' + y : 'Spring ' + y;
+    return '<div class="gut"><div class="wrap"><div class="greet"><div class="greet-h">Welcome' + (first ? ', ' + esc(first) : '') + '</div>' +
+      '<div class="greet-s">' + t.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) + ' · ' + term + '</div></div></div></div>';
+  }
   function homeHTML(){
-    var live = liveRooms(), n = live.length, h = '<section class="deck gut" id="deck" tabindex="0" aria-roledescription="carousel" aria-label="Live and coming showrooms">';
+    var live = liveRooms(), n = live.length, h = greetHTML() + '<section class="deck gut" id="deck" tabindex="0" aria-roledescription="carousel" aria-label="Live and coming showrooms">';
     live.forEach(function(c, k){
       var r = c.r;
       h += '<div class="card" data-k="' + k + '" style="background:' + r.tone + '" aria-hidden="true">' +
-        '<div class="ci"><div class="state" style="color:rgba(255,255,255,.85)"><span class="chip" style="background:' + chipBg(c.st) + '">' + c.st + '</span><span>' + esc(c.when) + '</span></div>' +
+        '<div class="ci"><div class="state" style="color:rgba(255,255,255,.85)"><span class="chip" style="background:' + statusBg[c.status] + '">' + c.status + '</span><span>' + esc(c.when) + '</span></div>' +
         '<div class="ctx">' + esc(r.ctx) + '</div><h1>' + esc(r.name) + '</h1><div class="meta">' + esc(c.meta) + '</div><a class="enter" href="#s/' + r.key + '" tabindex="-1">Enter</a></div>' +
         '<div class="cs" data-stage="' + k + '">' + cardStage(c) + '</div></div>';
     });
     if (n > 1) h += '<button type="button" class="peek l" data-step="-1"></button><button type="button" class="peek r" data-step="1"></button>';
     h += '</section><div class="dots" role="group" aria-label="Choose a showroom">' + live.map(function(c, k){ return '<button type="button" data-deck="' + k + '" aria-label="Show ' + esc(c.r.name) + '"><span><i></i></span></button>'; }).join('') + '</div>';
     h += '<div class="gut"><div class="wrap"><section class="sec" aria-labelledby="rooms-h"><div class="sec-h"><h2 id="rooms-h">Showrooms</h2><button type="button" class="hadd" data-new="showroom">+ Open a showroom</button></div><div class="tiles wide">';
-    h += ROOMS.map(function(r){ var c = roomCard(r); return '<a class="rtile" href="#s/' + r.key + '" style="background:' + r.tone + '"><span class="state" style="color:rgba(255,255,255,.85)"><span class="chip" style="background:' + chipBg(c.st) + '">' + c.st + '</span><span>' + esc(c.when) + '</span></span><span class="rs">' + esc(r.ctx) + '</span><span class="rn">' + esc(r.name) + '</span><span class="rm">' + esc(c.meta) + '</span></a>'; }).join('');
+    h += ROOMS.map(function(r){ var c = roomCard(r); return '<a class="rtile" href="#s/' + r.key + '" style="background:' + r.tone + '"><span class="state" style="color:rgba(255,255,255,.85)"><span class="chip" style="background:' + statusBg[c.status] + '">' + c.status + '</span><span>' + esc(c.when) + '</span></span><span class="rs">' + esc(r.ctx) + '</span><span class="rn">' + esc(r.name) + '</span><span class="rm">' + esc(c.meta) + '</span></a>'; }).join('');
     h += '</div></section>';
     h += '<section class="sec" aria-labelledby="studios-h" id="studios-sec"><div class="sec-h"><h2 id="studios-h">Studios</h2><button type="button" class="hadd" data-new="studio">+ Open a studio</button></div>';
     var me = PROFESSOR && PROFESSOR.id;
@@ -553,6 +596,72 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     });
     return h + '</section></div></div>' + foot();
   }
+
+  // ── SHOWROOMS AND STUDIOS PAGES ──
+  // The same layout on both: the orange page band, a role filter, groups with a count, 16:9 cards with one line under each
+  var listRole = { showrooms: 'All', studios: 'All' };
+  function filterBar(page, roles){
+    return '<div class="lbar" role="group" aria-label="Show ' + page + ' by your role">' + roles.map(function(l){
+      var on = listRole[page] === l;
+      return '<button type="button" class="lrole' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-lrole="' + page + ':' + l + '">' + l + '</button>';
+    }).join('') + '</div>';
+  }
+  function listGroup(id, title, count, body){
+    return '<section class="sec" aria-labelledby="' + id + '"><div class="sec-h"><h2 id="' + id + '">' + title + '</h2><span class="lbl">' + count + '</span></div><div class="tiles wide">' + body + '</div></section>';
+  }
+  function showroomsHTML(){
+    var ROLE = { Hosting: 'host', Exhibiting: 'exhibitor', Invited: 'visitor' }, pick = listRole.showrooms;
+    var ROLEWORD = { host: 'Host', exhibitor: 'Exhibitor', visitor: 'Invited' };
+    var rooms = ROOMS.filter(function(r){ return canView(r) && (pick === 'All' || roleIn(r) === ROLE[pick]); });
+    var tile = function(r){
+      var c = roomCard(r), aud = AUD[audienceOf(r)] || '';
+      return '<div><a class="rtile" href="#s/' + r.key + '" style="background:' + r.tone + '"><span class="state" style="color:rgba(255,255,255,.85)"><span class="chip" style="background:' + statusBg[c.status] + '">' + c.status + '</span><span>' + esc(c.when) + '</span></span>' +
+        '<span class="rs">' + esc(r.ctx) + '</span><span class="rn">' + esc(r.name) + '</span><span class="rm">' + esc(c.meta) + '</span></a>' +
+        '<div class="under"><b>' + ROLEWORD[roleIn(r)] + '</b><span>' + plural(r.booths.length, 'booth') + '</span><span>' + esc(aud) + '</span></div></div>';
+    };
+    var host = pick === 'All' || pick === 'Hosting', h = '';
+    ['Live', 'Prep', 'Past'].forEach(function(k){
+      var list = rooms.filter(function(r){ return statusOf(r) === k; });
+      var add = k === 'Prep' && host ? '<div><button type="button" class="addtile" data-new="showroom"><span aria-hidden="true">+</span></button><div class="under"><b>Open a showroom</b><span>For an assessment, a lecture series or an event</span></div></div>' : '';
+      if (list.length || add) h += listGroup('rooms-' + k, k, plural(list.length, 'showroom'), list.map(tile).join('') + add);
+    });
+    return pageHead('Showrooms', 'Showrooms you host, exhibit in or are invited to.') +
+      '<div class="gut"><div class="wrap">' + filterBar('showrooms', ['All', 'Hosting', 'Exhibiting', 'Invited']) + (h || '<p class="empty">No showrooms here yet.</p>') + '</div></div>' + foot();
+  }
+  // Studios have no state: they group by term. The current term is the latest "Fall/Spring YYYY" named on a showroom or studio.
+  function termOf(label){ var m = /(Spring|Fall)\s+(\d{4})/.exec(label || ''); return m ? +m[2] * 2 + (m[1] === 'Fall' ? 1 : 0) : null; }
+  function studiosHTML(){
+    var me = PROFESSOR && PROFESSOR.id, pick = listRole.studios;
+    var groups = STUDIOS.filter(function(g){ return g.owner ? g.owner === me : g.hostOf ? roleIn(find('s', g.hostOf).room) === 'host' : true; });
+    var roleOf = function(g){ return g.owner ? 'Own' : g.group === 'Your teams' ? 'Member' : 'Teaching'; };
+    var WORD = { Own: 'Owner', Member: 'Member', Teaching: 'Teaching' };
+    var cur = Math.max.apply(null, ROOMS.map(function(r){ return termOf(r.ctx) || 0; }).concat(STUDIOS.map(function(g){ return termOf(g.group) || 0; })));
+    var cards = [];
+    groups.forEach(function(g){
+      var role = roleOf(g), t = termOf(g.group), term = t && t < cur ? 'Earlier' : 'This term';
+      if (pick !== 'All' && role !== pick) return;
+      g.items.forEach(function(o){ cards.push({ g: g, o: o, role: role, term: term }); });
+    });
+    var tile = function(c){
+      var o = c.o, inner = mosaic(o.imgs.map(function(src){ return '<img src="' + src + '" alt="">'; })) +
+        '<span class="row"><span>' + esc(o.who) + '</span><span>' + esc(c.g.group === 'Your studio' ? '' : c.g.group) + '</span></span><span class="t">' + esc(o.name) + '</span>';
+      var box = o.href ? '<a class="tile" href="' + o.href + '">' + inner + '</a>' : '<div class="tile">' + inner + '</div>';
+      return '<div>' + box + '<div class="under"><b>' + WORD[c.role] + '</b><span>' + esc(o.note) + '</span>' +
+        (c.g.teamsOf && find('s', c.g.teamsOf) && roleIn(find('s', c.g.teamsOf).room) === 'host' && c.o === c.g.items[0] ? '<button type="button" class="hadd" data-teams="' + c.g.teamsOf + '">Edit teams</button>' : '') + '</div></div>';
+    };
+    var own = pick === 'All' || pick === 'Own', h = '';
+    ['This term', 'Earlier'].forEach(function(k, i){
+      var list = cards.filter(function(c){ return c.term === k; });
+      var add = k === 'This term' && own ? '<div><button type="button" class="addtile" data-new="studio"><span aria-hidden="true">+</span></button><div class="under"><b>Open a studio</b><span>For a lecture series, a talk or a project of your own</span></div></div>' : '';
+      if (list.length || add) h += listGroup('studios-' + i, k, plural(list.length, 'studio'), list.map(tile).join('') + add);
+    });
+    return pageHead('Studios', 'Where work is made before it goes to a showroom.') +
+      '<div class="gut"><div class="wrap">' + filterBar('studios', ['All', 'Own', 'Member', 'Teaching']) + (h || '<p class="empty">No studios here yet.</p>') + '</div></div>' + foot();
+  }
+  document.addEventListener('click', function(e){
+    var t = e.target.closest && e.target.closest('[data-lrole]'); if (!t) return;
+    var v = t.getAttribute('data-lrole').split(':'); listRole[v[0]] = v[1]; app.innerHTML = v[0] === 'studios' ? studiosHTML() : showroomsHTML();
+  });
 
   // ── ABOUT AND SETTINGS ──
   // the page header shared by About, Settings, Showrooms and Studios: a band in Ergon orange
@@ -694,13 +803,9 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     else {
       // Home: the live-showroom carousel, every showroom and every studio. Showrooms and Studios: just that list.
       var tab = kind === 'studios' ? 'studios' : kind === 'showrooms' ? 'showrooms' : 'home';
-      header(tab); app.innerHTML = homeHTML(); document.title = appName() + ' — Taejae University Showrooms';
-      if (tab === 'home') { placeDeck(); current = 'home'; }
-      else {
-        [$('deck'), app.querySelector('.dots'), tab === 'showrooms' ? $('studios-sec') : ($('rooms-h') && $('rooms-h').closest('section'))]
-          .forEach(function(el){ if (el) el.remove(); });
-        document.title = (tab === 'studios' ? 'Studios' : 'Showrooms') + ' · ' + appName();
-      }
+      header(tab);
+      if (tab === 'home') { app.innerHTML = homeHTML(); document.title = appName() + ' — Taejae University Showrooms'; placeDeck(); current = 'home'; }
+      else { app.innerHTML = tab === 'studios' ? studiosHTML() : showroomsHTML(); document.title = (tab === 'studios' ? 'Studios' : 'Showrooms') + ' · ' + appName(); }
     }
     window.scrollTo(0, 0);
   }

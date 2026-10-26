@@ -438,9 +438,16 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
       .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ if (!r.ok) throw new Error(j.message || j.msg || name + ' failed'); return j; }); });
   }
   var KIND = { slide_deck: 'slides', video: 'video' };
+  // a thumbnail for a piece added by its link: Google files through Drive, YouTube through its image server
+  function thumbOf(provider, id){
+    if (!id) return '';
+    if (provider === 'youtube') return 'https://i.ytimg.com/vi/' + id + '/hqdefault.jpg';
+    if (provider === 'google_slides' || provider === 'google_docs' || provider === 'google_drive') return 'https://drive.google.com/thumbnail?id=' + id + '&sz=w1200';
+    return '';
+  }
   function pieceOf(p){
     return { key: 'p' + p.piece_id, type: KIND[p.kind] || 'link', kind: p.kind, name: p.title, part: p.part || String(p.kind).replace('_', ' '),
-      src: p.note || String(p.provider).replace('_', ' '), img: p.thumbnail_url || '', id: p.file_id || '', url: p.url, provider: p.provider };
+      src: p.note || String(p.provider).replace('_', ' '), img: p.thumbnail_url || thumbOf(p.provider, p.file_id), id: p.file_id || '', url: p.url, provider: p.provider };
   }
   function roomOf(w, names){
     var hosts = (w.ergon_showroom_hosts || []).map(function(h){ return h.email; }), amHost = !!PROFESSOR && hosts.indexOf(PROFESSOR.email) >= 0;
@@ -534,7 +541,11 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
   var plural = function(n, w){ return n + ' ' + w + (n === 1 ? '' : 's'); };
   var playIcon = '<span class="play" aria-hidden="true"><svg viewBox="0 0 24 24" width="40%" height="40%" fill="#111111"><path d="M8 5l11 7-11 7z"/></svg></span>';
   var back = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
-  var visual = function(p){ return p.img ? '<img src="' + esc(p.img) + '" alt="">' : '<span class="ph"><small>' + esc(p.part || '') + '</small><b>' + esc(p.name) + '</b></span>'; };
+  // a piece's picture: its stored or derived thumbnail, and the title card if the picture cannot load (e.g. a file not shared)
+  var visual = function(p){
+    var ph = '<span class="ph"><small>' + esc(p.part || '') + '</small><b>' + esc(p.name) + '</b></span>';
+    return p.img ? '<img src="' + esc(p.img) + '" alt="" loading="lazy" referrerpolicy="no-referrer" data-ph="' + esc(ph) + '" onerror="this.outerHTML=this.dataset.ph">' : ph;
+  };
   // the preview inside a booth or studio tile: same box for every tile, layout by how many pieces it holds
   function mosaic(cells){
     if (!cells.length) return '<span class="minis m1"><span class="cell"><span class="ph"></span></span></span>';
@@ -791,7 +802,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
         var n = b.pieces.length, bs = b.from ? boothState(r, b) : null;
         return '<a class="tile" href="#b/' + b.key + '">' + mosaic(b.pieces.map(visual)) +
           '<span class="row"><span>' + esc(b.label) + (b.when ? ' · ' + esc(b.when) : '') + '</span><span>' + plural(n, 'piece') + '</span></span><span class="t">' + esc(b.name) + '</span>' +
-          '<span class="s">' + (bs === 'On stage' ? 'On stage now' : bs === 'Past' ? 'Shown ' + esc(b.when) : bs ? 'Starts ' + esc(String(b.when).split('–')[0]) : n ? '' : 'Nothing sent yet') + '</span></a>';
+          '<span class="s">' + (bs === 'On stage' ? 'Showing ' + esc(b.when) : bs === 'Past' ? 'Shown ' + esc(b.when) : bs ? 'Shows ' + esc(b.when) : n ? '' : 'Nothing sent yet') + '</span></a>';
       }).map(function(t, k, all){ return t; }) };
   }
   // the showroom page in Edit: an x on each booth and a + card at the end

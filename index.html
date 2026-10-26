@@ -225,6 +225,8 @@ a.tile:hover .t{text-decoration:underline;text-underline-offset:3px}
 /* a piece being edited: thumbnail and form are one card, and its x removes the whole card */
 .pedit{position:relative;align-self:start;background:var(--tile)}
 .pedit .addcard{box-shadow:none;padding-top:4px}
+.pedit.gone>:first-child{opacity:.4}
+.pedit>.back{position:absolute;top:8px;right:8px;min-height:34px;padding:0 12px;border:none;background:#111111;color:#FFFFFF;font-size:13px}
 .addcard .ab .go{border:none;background:var(--accent);color:#FFFFFF;font-weight:500}
 .empty{padding:28px 0;color:var(--muted)}
 .gatebtn{min-height:46px;padding:0 20px;border:none;background:#FFFFFF;color:#111111;font-size:15px;font-weight:500}
@@ -512,7 +514,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
           if (!groups[gk]) { groups[gk] = { group: gk === 'own' ? 'Your studio' : gk === 'mine' ? 'Your teams' : room ? (room.ctx || room.name) : 'Other studios', meta: '', owner: own ? PROFESSOR.id : null, teamsOf: room && room.offeringId && gk !== 'mine' ? room.key : null, items: [] }; order.push(gk); }
           var n = (s.ergon_studio_members || []).length;
           groups[gk].items.push({ who: s.team_label || 'Studio', name: s.title, note: own ? (s.summary || 'Your own studio') : n ? plural(n, 'member') : 'No members yet',
-            studioId: s.studio_id, archived: !!s.archived_at, canEdit: s.created_by === me || !!(room && roleIn(room) === 'host'),
+            studioId: s.studio_id, summary: s.summary || '', archived: !!s.archived_at, canEdit: s.created_by === me || !!(room && roleIn(room) === 'host'),
             imgs: (s.ergon_pieces || []).map(function(p){ return p.thumbnail_url; }).filter(Boolean) });
         });
         order.forEach(function(k){ groups[k].meta = plural(groups[k].items.length, 'studio'); });
@@ -659,17 +661,17 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
       return '<button type="button" class="lrole' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-lrole="' + page + ':' + l + '">' + l + '</button>';
     }).join('') + '</span></div>';
   }
-  function listGroup(id, title, count, body){
-    return '<section class="sec" aria-labelledby="' + id + '"><div class="sec-h"><h2 id="' + id + '">' + title + '</h2><span class="lbl">' + count + '</span></div><div class="tiles wide">' + body + '</div></section>';
+  function listGroup(id, title, count, body, act){
+    return '<section class="sec" aria-labelledby="' + id + '"><div class="sec-h"><h2 id="' + id + '">' + title + '</h2>' + (act || '<span class="lbl">' + count + '</span>') + '</div><div class="tiles wide">' + body + '</div></section>';
   }
   function showroomsHTML(){
     var ROLE = { Hosting: 'host', Exhibiting: 'exhibitor', Invited: 'visitor' }, pick = listRole.showrooms;
     var ROLEWORD = { host: 'Host', exhibitor: 'Exhibitor', visitor: 'Invited' };
-    var ed = editing.scope === 'showrooms';
-    var rooms = ROOMS.filter(function(r){ return canView(r) && (!r.hiddenAt || ed) && (pick === 'All' || roleIn(r) === ROLE[pick]); });
-    var tile = function(r){
-      var t = roomTile(r);
-      return ed && r.db && roleIn(r) === 'host' ? xTile(t, 'room:' + r.showroomId, 'Hide ' + r.name, !!r.hiddenAt) : t;
+    var rooms = ROOMS.filter(function(r){ return canView(r) && (pick === 'All' || roleIn(r) === ROLE[pick]); });
+    var mine = function(r){ return r.db && roleIn(r) === 'host'; };
+    var thumb = function(r){ var c = roomCard(r); return '<div class="rtile" style="background:' + r.tone + '"><span class="state" style="color:rgba(255,255,255,.85)"><span class="chip" style="background:' + statusBg[c.status] + '">' + c.status + '</span><span>' + esc(c.when) + '</span></span><span class="rs">' + esc(r.ctx) + '</span><span class="rn">' + esc(r.name) + '</span></div>'; };
+    var tile = function(r, ed){
+      return ed && mine(r) ? itemCard(thumb(r), 'room:' + r.showroomId, { title: r.name, note: r.ctx }, r.name, !!r.hiddenAt) : roomTile(r);
     };
     var roomTile = function(r){
       var c = roomCard(r), aud = AUD[audienceOf(r)] || '';
@@ -679,12 +681,14 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     };
     var host = pick === 'All' || pick === 'Hosting', h = '';
     ['Live', 'Prep', 'Past'].forEach(function(k){
-      var list = rooms.filter(function(r){ return statusOf(r) === k; });
-      var add = k !== 'Prep' || !host ? '' : ed ? plusTile('showroom') : '<div><button type="button" class="addtile" data-edit-open="showrooms"><span aria-hidden="true">+</span></button><div class="under"><b>Open a showroom</b><span>For an assessment, a lecture series or an event</span></div></div>';
-      if (list.length || add) h += listGroup('rooms-' + k, k, plural(list.length, 'showroom'), list.map(tile).join('') + add);
+      var sc = 'showrooms:' + k, ed = editing.scope === sc;
+      var list = rooms.filter(function(r){ return statusOf(r) === k && (!r.hiddenAt || ed); });
+      var add = k !== 'Prep' || !host ? '' : ed ? plusTile('showroom') : '<div><button type="button" class="addtile" data-edit-open="' + sc + '"><span aria-hidden="true">+</span></button><div class="under"><b>Open a showroom</b><span>For an assessment, a lecture series or an event</span></div></div>';
+      var act = list.some(mine) || (add && ROOMS.some(mine)) ? editBtn(sc) : '';
+      if (list.length || add) h += listGroup('rooms-' + k, k, plural(list.length, 'showroom'), list.map(function(r){ return tile(r, ed); }).join('') + add, act);
     });
     return pageHead('Showrooms', 'Showrooms you host, exhibit in or are invited to.') +
-      '<div class="gut"><div class="wrap">' + filterBar('showrooms', ['All', 'Hosting', 'Exhibiting', 'Invited'], ROOMS.some(function(r){ return r.db && roleIn(r) === 'host'; }) ? editBtn('showrooms') : '') + (h || '<p class="empty">No showrooms here yet.</p>') + '</div></div>' + foot();
+      '<div class="gut"><div class="wrap">' + filterBar('showrooms', ['All', 'Hosting', 'Exhibiting', 'Invited']) + (h || '<p class="empty">No showrooms here yet.</p>') + '</div></div>' + foot();
   }
   // Studios have no state: they group by term. A studio named for an earlier "Fall/Spring YYYY" than today's term is Earlier.
   function termOf(label){ var m = /(Spring|Fall)\s+(\d{4})/.exec(label || ''); return m ? +m[2] * 2 + (m[1] === 'Fall' ? 1 : 0) : null; }
@@ -698,24 +702,29 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     groups.forEach(function(g){
       var role = roleOf(g), t = termOf(g.group), term = t && t < cur ? 'Earlier' : 'This term';
       if (pick !== 'All' && role !== pick) return;
-      g.items.forEach(function(o){ if (!o.archived || editing.scope === 'studios') cards.push({ g: g, o: o, role: role, term: term }); });
+      g.items.forEach(function(o){ cards.push({ g: g, o: o, role: role, term: term }); });
     });
-    var tile = function(c){
-      var o = c.o, inner = mosaic(o.imgs.map(function(src){ return '<img src="' + src + '" alt="">'; })) +
+    var editable = function(c){ return !!(c.o.studioId && c.o.canEdit); };
+    var tile = function(c, ed){
+      var o = c.o;
+      if (ed && editable(c)) return itemCard('<div class="tile">' + mosaic(o.imgs.map(function(src){ return '<img src="' + src + '" alt="">'; })) + '</div>', 'studio:' + o.studioId, { title: o.name, note: o.summary || '' }, o.name, o.archived);
+      var inner = mosaic(o.imgs.map(function(src){ return '<img src="' + src + '" alt="">'; })) +
         '<span class="row"><span>' + esc(o.who) + '</span><span>' + esc(c.g.group === 'Your studio' ? '' : c.g.group) + '</span></span><span class="t">' + esc(o.name) + '</span>';
       var box = o.href ? '<a class="tile" href="' + o.href + '">' + inner + '</a>' : '<div class="tile">' + inner + '</div>';
       var card = '<div>' + box + '<div class="under"><b>' + WORD[c.role] + '</b><span>' + esc(o.note) + '</span>' +
         (c.g.teamsOf && find('s', c.g.teamsOf) && roleIn(find('s', c.g.teamsOf).room) === 'host' && c.o === c.g.items[0] ? '<button type="button" class="hadd" data-teams="' + c.g.teamsOf + '">Edit teams</button>' : '') + '</div></div>';
-      return editing.scope === 'studios' && o.studioId && o.canEdit ? xTile(card, 'studio:' + o.studioId, 'Put away ' + o.name, o.archived) : card;
+      return card;
     };
     var own = pick === 'All' || pick === 'Own', h = '';
     ['This term', 'Earlier'].forEach(function(k, i){
-      var list = cards.filter(function(c){ return c.term === k; });
-      var add = k !== 'This term' || !own ? '' : editing.scope === 'studios' ? plusTile('studio') : '<div><button type="button" class="addtile" data-edit-open="studios"><span aria-hidden="true">+</span></button><div class="under"><b>Open a studio</b><span>For a lecture series, a talk or a project of your own</span></div></div>';
-      if (list.length || add) h += listGroup('studios-' + i, k, plural(list.length, 'studio'), list.map(tile).join('') + add);
+      var sc = 'studios:' + i, ed = editing.scope === sc;
+      var list = cards.filter(function(c){ return c.term === k && (!c.o.archived || ed); });
+      var add = k !== 'This term' || !own ? '' : ed ? plusTile('studio') : '<div><button type="button" class="addtile" data-edit-open="' + sc + '"><span aria-hidden="true">+</span></button><div class="under"><b>Open a studio</b><span>For a lecture series, a talk or a project of your own</span></div></div>';
+      var act = list.some(editable) || add ? editBtn(sc) : '';
+      if (list.length || add) h += listGroup('studios-' + i, k, plural(list.length, 'studio'), list.map(function(c){ return tile(c, ed); }).join('') + add, act);
     });
     return pageHead('Studios', 'Where work is made before it goes to a showroom.') +
-      '<div class="gut"><div class="wrap">' + filterBar('studios', ['All', 'Own', 'Member', 'Teaching'], editBtn('studios')) + (h || '<p class="empty">No studios here yet.</p>') + '</div></div>' + foot();
+      '<div class="gut"><div class="wrap">' + filterBar('studios', ['All', 'Own', 'Member', 'Teaching']) + (h || '<p class="empty">No studios here yet.</p>') + '</div></div>' + foot();
   }
   document.addEventListener('click', function(e){
     var t = e.target.closest && e.target.closest('[data-lrole]'); if (!t) return;
@@ -816,8 +825,9 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
   // the showroom page in Edit: an x on each booth and a + card at the end
   function editShowroomTiles(r, cfg){
     if (editing.scope !== 's:' + r.key) return cfg;
-    var shown = r.booths.filter(function(b){ return true; });
-    cfg.tiles = cfg.tiles.map(function(t, k){ var b = shown[k]; return xTile(t, 'booth:' + b.boothId, 'Hide ' + b.label + ' · ' + b.name, b.hidden); }).concat([plusTile('booth', r.key)]);
+    cfg.tiles = r.booths.map(function(b){
+      return itemCard('<div class="tile">' + mosaic(b.pieces.map(visual)) + '</div>', 'booth:' + b.boothId, { title: b.name, note: b.prog }, b.label + ' · ' + b.name, b.hidden);
+    }).concat([plusTile('booth', r.key)]);
     cfg.emptyAct = ''; return cfg;
   }
   function boothCfg(r, b, j){
@@ -833,7 +843,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
       cfg.tilesAct = editBtn('b:' + b.key);
       if (editing.scope === 'b:' + b.key) cfg.tiles = b.pieces.map(function(p){
         var thumb = '<div class="tile"><span class="one">' + visual(p) + (p.type === 'video' ? playIcon : '') + '</span></div>';
-        return '<div class="pedit">' + thumb + formCard('piece-edit', p.key, editing.drafts[p.key] || pieceValues(p)) +
+        return '<div class="pedit">' + thumb + formCard('piece-edit', p.key, editing.drafts[p.key] || pieceValues(p), pieceValues(p)) +
           '<button type="button" class="ex" data-x="entry:' + p.entryId + ':1" data-ask="Remove “' + esc(p.name) + '” from this booth?" aria-label="Remove ' + esc(p.name) + ' from this booth">×</button></div>';
       }).concat([plusTile('piece', b.key)]);
     }
@@ -844,23 +854,26 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
   // or hides a booth, a showroom or a studio (Show again brings it back). The + adds one with a title and a note.
   // On a booth, Edit turns every piece into its form; what is typed is kept in drafts and saved all at once on Done.
   var editing = { scope: null, adding: false, drafts: {} };
+  var XWORD = { room: 'Hide', booth: 'Hide', studio: 'Put away' };
+  function itemCard(thumb, what, v, name, hidden){
+    if (hidden) return '<div class="pedit gone">' + thumb + '<button type="button" class="back" data-x="' + what + ':0">Show again</button></div>';
+    var w = XWORD[what.split(':')[0]];
+    return '<div class="pedit">' + thumb + formCard('item-edit', what, editing.drafts[what] || v, v) +
+      '<button type="button" class="ex" data-x="' + what + ':1" data-ask="' + w + ' “' + esc(name) + '”?" aria-label="' + w + ' ' + esc(name) + '">×</button></div>';
+  }
   function pieceValues(p){ return { title: p.name, url: p.url, note: p.noteText || '' }; }
   function canEditBooth(r, b){ return r.db && !!b.studioId && signedIn() && roleIn(r) === 'host'; }
   function editBtn(scope){ var on = editing.scope === scope; return '<button type="button" class="hadd edit" data-edit="' + scope + '" aria-pressed="' + on + '">' + (on ? 'Done' : 'Edit') + '</button>'; }
-  function xTile(inner, what, label, hidden){
-    return '<div class="etile' + (hidden ? ' gone' : '') + '">' + inner + (hidden
-      ? '<button type="button" class="back" data-x="' + what + ':0">Show again</button>'
-      : '<button type="button" class="ex" data-x="' + what + ':1" aria-label="' + esc(label) + '">×</button>') + '</div>';
-  }
   var ADDTEXT = { piece: 'Add a piece by link', booth: 'Add a booth', showroom: 'Open a showroom', studio: 'Open a studio' };
   function plusTile(kind, target){
     if (!editing.adding) return '<button type="button" class="addtile pt" data-add-open="1"><span aria-hidden="true">+</span><small>' + ADDTEXT[kind] + '</small></button>';
     return formCard(kind, target, {});
   }
   // the card used both to add and to change: a piece has a title, a link and a note; the others a title and a note
-  function formCard(kind, target, v){
-    var link = kind === 'piece' || kind === 'piece-edit', bulk = kind === 'piece-edit';
-    return '<form class="addcard' + (bulk ? ' bulk' : '') + '" data-add-kind="' + kind + '" data-target="' + (target || '') + '" novalidate>' +
+  function formCard(kind, target, v, was){
+    var link = kind === 'piece' || kind === 'piece-edit', bulk = kind === 'piece-edit' || kind === 'item-edit';
+    return '<form class="addcard' + (bulk ? ' bulk' : '') + '" data-add-kind="' + kind + '" data-target="' + (target || '') + '"' +
+      (was ? ' data-was="' + esc(JSON.stringify({ title: was.title || '', url: was.url || '', note: was.note || '' })) + '"' : '') + ' novalidate>' +
       '<label>Title<input name="title" type="text" required placeholder="' + (link ? 'What is it?' : 'Its name') + '" value="' + esc(v.title || '') + '"></label>' +
       (link ? '<label>Link<input name="url" type="url" required placeholder="https://" value="' + esc(v.url || '') + '"></label>' : '') +
       '<label>Short note<input name="note" type="text" placeholder="Optional, shown under the title" value="' + esc(v.note || '') + '"></label>' +
@@ -870,20 +883,26 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
   function rerender(){ var y = window.scrollY; render(); window.scrollTo(0, y); var f = app.querySelector('.addcard:not(.bulk)'); if (f) f.title.focus(); }
   function afterEdit(msg){ return function(){ toast(msg); editing.adding = false; return loadDB(); }; }
   document.addEventListener('input', function(e){
-    var f = e.target.form; if (!f || f.getAttribute('data-add-kind') !== 'piece-edit') return;
-    editing.drafts[f.getAttribute('data-target')] = { title: f.title.value, url: f.url.value, note: f.note.value };
+    var f = e.target.form; if (!f || !f.classList.contains('bulk')) return;
+    editing.drafts[f.getAttribute('data-target')] = { title: f.title.value, url: f.url ? f.url.value : '', note: f.note.value };
   });
-  // Done on a booth: check every changed piece, then save them together
-  function saveBooth(btn){
+  // Done: check every changed card, then save them together
+  var UPDATE = { room: ['ergon_update_showroom', 'p_showroom_id'], booth: ['ergon_update_booth', 'p_booth_id'], studio: ['ergon_update_studio', 'p_studio_id'] };
+  function saveEdits(btn){
     var forms = Array.prototype.slice.call(app.querySelectorAll('.addcard.bulk')), calls = [], bad = null;
     forms.forEach(function(f){
-      var fp = find('p', f.getAttribute('data-target')), o = pieceValues(fp.piece), msg = f.querySelector('.am');
-      var title = f.title.value.trim(), url = f.url.value.trim(), note = f.note.value.trim();
+      var o = JSON.parse(f.getAttribute('data-was')), msg = f.querySelector('.am'), target = f.getAttribute('data-target');
+      var title = f.title.value.trim(), url = f.url ? f.url.value.trim() : '', note = f.note.value.trim();
       msg.textContent = '';
-      if (title === o.title && url === o.url && note === (o.note || '')) return;
+      if (title === o.title && url === o.url && note === o.note) return;
       if (!title) { msg.textContent = 'Give it a title.'; bad = bad || f.title; return; }
-      if (!/^https?:\/\//i.test(url)) { msg.textContent = 'Paste a link that starts with https://'; bad = bad || f.url; return; }
-      var info = linkInfo(url);
+      if (f.url && !/^https?:\/\//i.test(url)) { msg.textContent = 'Paste a link that starts with https://'; bad = bad || f.url; return; }
+      if (f.getAttribute('data-add-kind') === 'item-edit') {
+        var w = target.split(':'), u = UPDATE[w[0]], args = { p_title: title, p_note: note || null }; args[u[1]] = +w[1];
+        calls.push(function(){ return rpc(u[0], args); });
+        return;
+      }
+      var fp = find('p', target), info = linkInfo(url);
       calls.push(function(){ return rpc('ergon_update_piece', { p_piece_id: fp.piece.pieceId, p_title: title, p_url: url, p_note: note || null, p_kind: info.kind === 'other' ? null : info.kind, p_provider: info.provider, p_file_id: info.id || null }); });
     });
     if (bad) { bad.focus(); return; }
@@ -891,13 +910,13 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     if (!calls.length) { done(); rerender(); return; }
     btn.disabled = true; btn.textContent = 'Saving…';
     Promise.all(calls.map(function(c){ return c(); }))
-      .then(function(){ done(); toast(plural(calls.length, 'piece') + ' saved'); return loadDB(); }).then(rerender)
+      .then(function(){ done(); toast(calls.length === 1 ? 'Saved' : calls.length + ' changes saved'); return loadDB(); }).then(rerender)
       .catch(function(ex){ toast(ex.message); btn.disabled = false; btn.textContent = 'Done'; });
   }
   document.addEventListener('click', function(e){
     var t = e.target.closest ? e.target.closest('[data-edit],[data-x],[data-add-open],[data-add-cancel],[data-edit-open]') : null; if (!t) return;
     if (t.hasAttribute('data-edit')) { var k = t.getAttribute('data-edit');
-      if (editing.scope === k && k.indexOf('b:') === 0) { saveBooth(t); return; }
+      if (editing.scope === k) { saveEdits(t); return; }
       editing.scope = editing.scope === k ? null : k; editing.adding = false; editing.drafts = {}; rerender(); return; }
     if (t.hasAttribute('data-edit-open')) { editing.scope = t.getAttribute('data-edit-open'); editing.adding = true; rerender(); return; }
     if (t.hasAttribute('data-add-open')) { editing.adding = true; rerender(); return; }
@@ -916,7 +935,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     var f = e.target; if (!f.classList || !f.classList.contains('addcard')) return;
     e.preventDefault();
     var kind = f.getAttribute('data-add-kind'), target = f.getAttribute('data-target');
-    if (kind === 'piece-edit') { var db = app.querySelector('[data-edit][aria-pressed="true"]'); if (db) saveBooth(db); return; }
+    if (f.classList.contains('bulk')) { var db = app.querySelector('[data-edit][aria-pressed="true"]'); if (db) saveEdits(db); return; }
     var msg = f.querySelector('.am'), btn = f.querySelector('.go'), title = f.title.value.trim(), note = f.note.value.trim() || null, call;
     if (!title) { msg.textContent = 'Give it a title.'; f.title.focus(); return; }
     if (kind === 'piece') {
@@ -963,7 +982,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     var hash = location.hash.slice(1), parts = hash.split('/'), kind = parts[0], key = parts[1], f = key ? find(kind, key) : null;
     current = null; rot = 0; clearTimeout(autoTimer); clearHover(); hovering = false;
     var scopeNow = kind === 'b' ? 'b:' + key : kind === 's' ? 's:' + key : kind === 'showrooms' || kind === 'studios' ? kind : '';
-    if (editing.scope !== scopeNow) { editing.scope = null; editing.adding = false; editing.drafts = {}; }
+    if (editing.scope !== scopeNow && !(scopeNow && String(editing.scope).indexOf(scopeNow + ':') === 0)) { editing.scope = null; editing.adding = false; editing.drafts = {}; }
     if (f && kind === 's' && AUD[parts[2]]) { try { sessionStorage.setItem('ergon_aud_' + f.room.key, parts[2]); } catch (e) {} }
     if (f) { try { sessionStorage.setItem('ergon_last_room', f.room.key); } catch (e) {} }
     if (f && !canView(f.room)) {

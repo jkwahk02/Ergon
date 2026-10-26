@@ -601,10 +601,8 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
 
   // ── HEADER: everyone signed in gets Ergon; a visitor without sign-in sees only Taejae and the showroom ──
   // 'Ergon Pro' for faculty, 'Ergon' for students and guests (Pro marks the faculty versions of the suite apps)
-  // one tab title on every page, as in Telos and TaeSylla
+  // one tab title on the app's own pages, as in Telos and TaeSylla; a showroom's pages carry the showroom's title
   var TAB_TITLE = 'Ergon — Taejae University';
-  // a visitor who came by an invite link, without a sign-in, sees the showroom's own title
-  function inviteTitle(r){ return sbUser ? TAB_TITLE : r.name; }
   function header(where, publicRoom){
     var top = $('top');
     var hostLink = '<a class="hostname" href="#s/' + (publicRoom ? publicRoom.key : '') + '">태재대학교' + (publicRoom ? ' · <b>' + esc(publicRoom.name) + '</b>' : '') + '</a>';
@@ -1058,12 +1056,12 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     }
     if (!sbUser && !f) { header(''); app.innerHTML = ''; wallFor(null); showWall(true); return; }
     showWall(false);
-    if (f && kind === 'p') { header('showrooms', f.room); app.innerHTML = leafHTML(f.room, f.booth, f.piece, f.k); document.title = inviteTitle(f.room); }
+    if (f && kind === 'p') { header('showrooms', f.room); app.innerHTML = leafHTML(f.room, f.booth, f.piece, f.k); document.title = f.room.name; }
     else if (f && kind === 'b') {
       if (f.booth.pieces.length === 1 && !canEditBooth(f.room, f.booth)) { location.replace('#p/' + f.booth.pieces[0].key); return; }   // a single-piece booth opens on its piece, except for a host who may edit it
-      header('showrooms', f.room); current = boothCfg(f.room, f.booth, f.j); app.innerHTML = page(current); document.title = inviteTitle(f.room);
+      header('showrooms', f.room); current = boothCfg(f.room, f.booth, f.j); app.innerHTML = page(current); document.title = f.room.name;
     }
-    else if (f && kind === 's') { header('showrooms', f.room); current = editShowroomTiles(f.room, showroomCfg(f.room)); app.innerHTML = page(current); document.title = inviteTitle(f.room); }
+    else if (f && kind === 's') { header('showrooms', f.room); current = editShowroomTiles(f.room, showroomCfg(f.room)); app.innerHTML = page(current); document.title = f.room.name; }
     else if (kind === 'about') { header('about'); app.innerHTML = aboutHTML(); document.title = TAB_TITLE; }
     else if (kind === 'settings') { header('settings'); app.innerHTML = settingsHTML(); document.title = TAB_TITLE; }
     else {

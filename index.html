@@ -603,7 +603,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
 
   // ── HOME ──
   var deckIdx = 0, rot = 0, current = null;
-  function roomCard(r){ var s = lead(r), st = stateOf(s); return { r: r, st: st, status: statusOf(r), when: lineOf(r), meta: r.progress[st] || '' }; }
+  function roomCard(r){ var s = lead(r), st = stateOf(s); return { r: r, st: st, status: statusOf(r), when: lineOf(r) }; }
   function liveRooms(){ return ROOMS.filter(function(r){ return !r.hiddenAt; }).map(roomCard).filter(function(c){ return c.st !== 'Past'; }).sort(function(a, b){ return ORDER[a.st] - ORDER[b.st]; }); }
   function cardStage(c){
     var r = c.r, pcs = allPieces(r), pc = pcs.length ? pcs[rot % pcs.length] : null;
@@ -624,13 +624,13 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
       var r = c.r;
       h += '<div class="card" data-k="' + k + '" style="background:' + r.tone + '" aria-hidden="true">' +
         '<div class="ci"><div class="state" style="color:rgba(255,255,255,.85)"><span class="chip" style="background:' + statusBg[c.status] + '">' + c.status + '</span><span>' + esc(c.when) + '</span></div>' +
-        '<div class="ctx">' + esc(r.ctx) + '</div><h1>' + esc(r.name) + '</h1><div class="meta">' + esc(c.meta) + '</div><a class="enter" href="#s/' + r.key + '" tabindex="-1">Enter</a></div>' +
+        '<div class="ctx">' + esc(r.ctx) + '</div><h1>' + esc(r.name) + '</h1><a class="enter" href="#s/' + r.key + '" tabindex="-1">Enter</a></div>' +
         '<div class="cs" data-stage="' + k + '">' + cardStage(c) + '</div></div>';
     });
     if (n > 1) h += '<button type="button" class="peek l" data-step="-1"></button><button type="button" class="peek r" data-step="1"></button>';
     h += '</section><div class="dots" role="group" aria-label="Choose a showroom">' + live.map(function(c, k){ return '<button type="button" data-deck="' + k + '" aria-label="Show ' + esc(c.r.name) + '"><span><i></i></span></button>'; }).join('') + '</div>';
     h += '<div class="gut"><div class="wrap"><section class="sec" aria-labelledby="rooms-h"><div class="sec-h"><h2 id="rooms-h">Showrooms</h2><button type="button" class="hadd" data-new="showroom">+ Open a showroom</button></div><div class="tiles wide">';
-    h += ROOMS.filter(function(r){ return !r.hiddenAt; }).map(function(r){ var c = roomCard(r); return '<a class="rtile" href="#s/' + r.key + '" style="background:' + r.tone + '"><span class="state" style="color:rgba(255,255,255,.85)"><span class="chip" style="background:' + statusBg[c.status] + '">' + c.status + '</span><span>' + esc(c.when) + '</span></span><span class="rs">' + esc(r.ctx) + '</span><span class="rn">' + esc(r.name) + '</span><span class="rm">' + esc(c.meta) + '</span></a>'; }).join('');
+    h += ROOMS.filter(function(r){ return !r.hiddenAt; }).map(function(r){ var c = roomCard(r); return '<a class="rtile" href="#s/' + r.key + '" style="background:' + r.tone + '"><span class="state" style="color:rgba(255,255,255,.85)"><span class="chip" style="background:' + statusBg[c.status] + '">' + c.status + '</span><span>' + esc(c.when) + '</span></span><span class="rs">' + esc(r.ctx) + '</span><span class="rn">' + esc(r.name) + '</span></a>'; }).join('');
     h += '</div></section>';
     h += '<section class="sec" aria-labelledby="studios-h" id="studios-sec"><div class="sec-h"><h2 id="studios-h">Studios</h2><button type="button" class="hadd" data-new="studio">+ Open a studio</button></div>';
     var me = PROFESSOR && PROFESSOR.id;
@@ -671,7 +671,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     var roomTile = function(r){
       var c = roomCard(r), aud = AUD[audienceOf(r)] || '';
       return '<div><a class="rtile" href="#s/' + r.key + '" style="background:' + r.tone + '"><span class="state" style="color:rgba(255,255,255,.85)"><span class="chip" style="background:' + statusBg[c.status] + '">' + c.status + '</span><span>' + esc(c.when) + '</span></span>' +
-        '<span class="rs">' + esc(r.ctx) + '</span><span class="rn">' + esc(r.name) + '</span><span class="rm">' + esc(c.meta) + '</span></a>' +
+        '<span class="rs">' + esc(r.ctx) + '</span><span class="rn">' + esc(r.name) + '</span></a>' +
         '<div class="under"><b>' + ROLEWORD[roleIn(r)] + '</b><span>' + plural(r.booths.length, 'booth') + '</span><span>' + esc(aud) + '</span></div></div>';
     };
     var host = pick === 'All' || pick === 'Hosting', h = '';
@@ -798,7 +798,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
   function showroomCfg(r){
     var s = lead(r), st = stateOf(s);
     return { invite: r.key, tone: r.tone, path: signedIn() ? [['Showrooms', '#showrooms'], [r.name, null]] : [[r.name, null]], state: statusOf(r), when: lineOf(r), ctx: r.ctx, name: r.name,
-      prog: r.progress[st] || '', dl: [['Host', r.host], ['Booths', plural(r.booths.length, 'booth')]], sessions: r.sessions, lead: s,
+      dl: [['Host', r.host], ['Booths', plural(r.booths.length, 'booth')]], sessions: r.sessions, lead: s,
       stage: allPieces(r).map(function(x){ return { p: x.p, sub: x.b.label + ' · ' + x.p.part }; }), empty: r.booths.length ? 'Nothing sent yet' : 'Booths appear here as teams send work',
       tilesTitle: 'Booths', noTiles: roleIn(r) === 'host' && r.offeringId ? 'No booths yet. Put the class into teams; each team gets a booth and a studio. ' : 'Booths appear here as teams send work',
       emptyAct: roleIn(r) === 'host' && r.offeringId ? '<button type="button" class="hadd" data-teams="' + r.key + '">Set up teams</button>' : '', facts: r.facts, factsTitle: 'About this showroom',

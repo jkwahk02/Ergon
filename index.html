@@ -509,6 +509,10 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     var ss = r.sessions, first = ss.reduce(function(a, x){ return x.from < a ? x.from : a; }, ss[0].from), last = ss.reduce(function(a, x){ return x.to > a ? x.to : a; }, ss[0].to);
     return now >= last ? 'Past' : now < first ? 'Prep' : 'Live';
   }
+  // lists run Live, then Prep, then Past; within each, the showroom that started most recently comes first
+  var STATUS_ORDER = { Live: 0, Prep: 1, Past: 2 };
+  function startOf(r){ return r.sessions.reduce(function(m, x){ return x.from < m ? x.from : m; }, r.sessions[0].from); }
+  function byStatus(a, b){ return STATUS_ORDER[statusOf(a)] - STATUS_ORDER[statusOf(b)] || startOf(b) - startOf(a); }
   function lineOf(r){
     var s = lead(r), st = stateOf(s), many = r.sessions.length > 1 ? ' · ' + s.name : '';
     if (!s.when || s.when === 'Date to be set') return 'Dates to be set';
@@ -605,11 +609,18 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     });
     if (n > 1) h += '<button type="button" class="peek l" data-step="-1"></button><button type="button" class="peek r" data-step="1"></button>';
     h += '</section><div class="dots" role="group" aria-label="Choose a showroom">' + live.map(function(c, k){ return '<button type="button" data-deck="' + k + '" aria-label="Show ' + esc(c.r.name) + '"><span><i></i></span></button>'; }).join('') + '</div>';
-    h += '<div class="gut"><div class="wrap"><section class="sec" aria-labelledby="rooms-h"><div class="sec-h"><h2 id="rooms-h">Showrooms</h2><button type="button" class="hadd" data-new="showroom">+ Open a showroom</button></div><div class="tiles wide">';
-    h += ROOMS.filter(function(r){ return !r.hiddenAt; }).map(function(r){ var c = roomCard(r); return '<a class="rtile" href="#s/' + r.key + '" style="background:' + r.tone + '"><span class="state" style="color:rgba(255,255,255,.85)"><span class="chip" style="background:' + statusBg[c.status] + '">' + c.status + '</span><span>' + esc(c.when) + '</span></span><span class="rs">' + esc(r.ctx) + '</span><span class="rn">' + esc(r.name) + '</span></a>'; }).join('');
-    h += '</div></section>';
+    // Home shows what is happening now: Live and Prep showrooms (Past ones stay on the Showrooms page)
+    var shown = ROOMS.filter(function(r){ return !r.hiddenAt; }).sort(byStatus);
+    var homeTile = function(r){ var c = roomCard(r); return '<a class="rtile" href="#s/' + r.key + '" style="background:' + r.tone + '"><span class="state" style="color:rgba(255,255,255,.85)"><span class="chip" style="background:' + statusBg[c.status] + '">' + c.status + '</span><span>' + esc(c.when) + '</span></span><span class="rs">' + esc(r.ctx) + '</span><span class="rn">' + esc(r.name) + '</span></a>'; };
+    h += '<div class="gut"><div class="wrap">';
+    ['Live', 'Prep'].forEach(function(k){
+      var list = shown.filter(function(r){ return statusOf(r) === k; });
+      if (!list.length && k === 'Prep') return;
+      h += '<section class="sec" aria-labelledby="rooms-' + k + '"><div class="sec-h"><h2 id="rooms-' + k + '">' + k + ' Showrooms</h2><span class="lbl">' + plural(list.length, 'showroom') + '</span></div>' +
+        (list.length ? '<div class="tiles wide">' + list.map(homeTile).join('') + '</div>' : '<p class="empty">No showrooms are live right now. <a href="#showrooms">See all showrooms</a></p>') + '</section>';
+    });
     // Studios come after the MVP; until then Home only says so
-    h += '<section class="sec" aria-labelledby="studios-h" id="studios-sec"><div class="sec-h"><h2 id="studios-h">Studios</h2><span class="lbl">Coming soon</span></div>' +
+    h += '<section class="sec" aria-labelledby="studios-h" id="studios-sec"><div class="sec-h"><h2 id="studios-h">Open Studios</h2><span class="lbl">Coming soon</span></div>' +
       '<p class="empty">Studios are where teams and lecturers make their work before it goes to a showroom. They are coming soon.</p>';
     return h + '</section></div></div>' + foot();
   }
@@ -629,7 +640,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
   function showroomsHTML(){
     var ROLE = { Hosting: 'host', Exhibiting: 'exhibitor', Invited: 'visitor' }, pick = listRole.showrooms;
     var ROLEWORD = { host: 'Host', exhibitor: 'Exhibitor', visitor: 'Invited' };
-    var rooms = ROOMS.filter(function(r){ return canView(r) && (pick === 'All' || roleIn(r) === ROLE[pick]); });
+    var rooms = ROOMS.filter(function(r){ return canView(r) && (pick === 'All' || roleIn(r) === ROLE[pick]); }).sort(byStatus);
     var mine = function(r){ return r.db && roleIn(r) === 'host'; };
     var thumb = function(r){ var c = roomCard(r); return '<div class="rtile" style="background:' + r.tone + '"><span class="state" style="color:rgba(255,255,255,.85)"><span class="chip" style="background:' + statusBg[c.status] + '">' + c.status + '</span><span>' + esc(c.when) + '</span></span><span class="rs">' + esc(r.ctx) + '</span><span class="rn">' + esc(r.name) + '</span></div>'; };
     var tile = function(r, ed){
@@ -1078,7 +1089,6 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
   var swipeX = null;
   app.addEventListener('pointerdown', function(e){ if (e.pointerType !== 'mouse' && e.target.closest && e.target.closest('#deck')) swipeX = e.clientX; });
   app.addEventListener('pointerup', function(e){ if (swipeX == null) return; var dx = e.clientX - swipeX; swipeX = null; if (Math.abs(dx) > 50) goDeck(deckIdx + (dx < 0 ? 1 : -1)); });
-  app.addEventListener('click', function(e){ var t = e.target.closest('[data-new]'); if (t) toast((t.getAttribute('data-new') === 'studio' ? 'Opening a studio' : 'Opening a showroom') + ' comes in the next version'); });
   app.addEventListener('click', function(e){ var t = e.target.closest('[data-set]'); if (!t) return; if (t.getAttribute('data-set') === 'out') signOut(); else showPwWall('change'); });
   $('top').addEventListener('click', function(e){
     if (e.target.closest('#me-btn')) { var m = $('me-menu'), open = m.hidden; m.hidden = !open; $('me-btn').setAttribute('aria-expanded', String(open)); return; }

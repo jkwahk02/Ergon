@@ -167,8 +167,10 @@ h2{margin:0;font-weight:500;font-size:15px}
 /* tiles and facts */
 .sec{padding-block:56px 0}
 .sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-bottom:12px;margin-bottom:24px;border-bottom:1px solid var(--fg)}
-.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:40px 28px}
-.tiles.wide{grid-template-columns:repeat(auto-fill,minmax(360px,1fr))}
+/* every list uses one template: four cards a row, two on tablets, one on phones */
+.tiles,.tiles.wide{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:40px 28px}
+@media (max-width:1100px){.tiles,.tiles.wide{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.tiles,.tiles.wide{grid-template-columns:1fr}}
 .tile{display:block;text-decoration:none}
 .tile .minis{display:grid;gap:6px;padding:14px;box-sizing:border-box;aspect-ratio:16/9;max-width:100%;background:var(--tile)}
 /* every booth and studio tile has the same 16:9 preview; inside it, one piece fills it, two split it, three or more give one large and two small */
@@ -441,7 +443,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
       src: p.note || String(p.provider).replace('_', ' '), img: p.thumbnail_url || '', id: p.file_id || '', url: p.url, provider: p.provider };
   }
   function roomOf(w, names){
-    var hosts = (w.ergon_showroom_hosts || []).map(function(h){ return h.email; }), amHost = hosts.indexOf(PROFESSOR.email) >= 0;
+    var hosts = (w.ergon_showroom_hosts || []).map(function(h){ return h.email; }), amHost = !!PROFESSOR && hosts.indexOf(PROFESSOR.email) >= 0;
     var ss = (w.ergon_sessions || []).filter(function(s){ return !s.is_draft; })
       .sort(function(a, b){ return a.sort_order - b.sort_order || (a.stage_from < b.stage_from ? -1 : 1); });
     var booths = (w.ergon_booths || []).filter(function(b){ return !b.hidden || amHost; })
@@ -454,12 +456,21 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
       });
     var withWork = booths.filter(function(b){ return b.pieces.length; }).length;
     return { key: 's' + w.showroom_id, showroomId: w.showroom_id, db: true, hiddenAt: w.hidden_at || null, offeringId: w.offering_id, name: w.title, ctx: w.subtitle || '', tone: w.tone || '#2F2F2F',
-      host: hosts.map(function(e){ return names[e] || e.split('@')[0]; }).join(', '), hostEmails: hosts, audience: w.audience,
+      host: w.host_name || hosts.map(function(e){ return names[e] || e.split('@')[0]; }).join(', '), hostEmails: hosts, audience: w.audience,
       sessions: ss.length ? ss.map(function(s){ return { id: s.session_id, name: s.name, when: whenOf(s.stage_from, s.stage_to), open: d(s.opens_on || s.stage_from), from: d(s.stage_from), to: dayAfter(s.stage_to) }; })
                           : [{ name: 'Showcase', when: 'Date to be set', open: d('2999-01-01'), from: d('2999-01-01'), to: d('2999-01-02') }],   // no session yet: Coming soon
       facts: Array.isArray(w.facts) ? w.facts : [],
       progress: { 'On stage': 'Appraisal open', 'Open': withWork + ' of ' + plural(booths.length, 'booth') + ' have work', 'Coming soon': 'Opens for work soon', 'Past': 'All sessions shown' },
       booths: booths };
+  }
+  // A visitor without a sign-in reads only the public view (ergon_public_view_v1.sql): no emails, no class lists.
+  function loadPublic(){
+    return fetch(SUPABASE_URL + '/rest/v1/ergon_public_showrooms?select=showroom', { headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY } })
+      .then(function(r){ if (!r.ok) throw new Error('public showrooms ' + r.status); return r.json(); })
+      .then(function(rows){
+        var pub = rows.map(function(x){ return roomOf(x.showroom, {}); });
+        ROOMS = pub.concat(STATIC_ROOMS.filter(function(r){ return !pub.some(function(w){ return w.name === r.name && w.ctx === r.ctx; }); }));
+      }).catch(function(ex){ ROOMS = STATIC_ROOMS.slice(); console.warn('Ergon: public showrooms not loaded -', ex && ex.message); });
   }
   function loadDB(){
     if (!signedIn()) return Promise.resolve();
@@ -493,7 +504,8 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
             imgs: (s.ergon_pieces || []).map(function(p){ return p.thumbnail_url; }).filter(Boolean) });
         });
         order.forEach(function(k){ groups[k].meta = plural(groups[k].items.length, 'studio'); });
-        STUDIOS = STATIC_STUDIOS.filter(function(g){ return !(g.dbOffering && offerings.indexOf(g.dbOffering) >= 0); }).concat(order.map(function(k){ return groups[k]; }));
+        // a written-in group gives way to the database: its course's teams, or your own studio once it is stored
+        STUDIOS = STATIC_STUDIOS.filter(function(g){ return !(g.dbOffering && offerings.indexOf(g.dbOffering) >= 0) && !(g.owner && groups.own); }).concat(order.map(function(k){ return groups[k]; }));
       });
     }).catch(function(ex){ console.warn('Ergon: database not loaded -', ex && ex.message); });
   }
@@ -532,9 +544,9 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
   // Who a showroom is for. An invitation link may narrow or widen it for whoever arrives through it (kept for this tab).
   // This version checks it in the page; the showroom settings table will hold it once Ergon has its own tables.
   var AUD = { public: 'Anyone with the link', taejae: 'Taejae members', class: 'The class' };
-  function audienceOf(r){ var a = null; try { a = sessionStorage.getItem('ergon_aud_' + r.key); } catch (e) {} return AUD[a] ? a : (r.audience || 'taejae'); }
+  function audienceOf(r){ if (r.db) return r.audience; var a = null; try { a = sessionStorage.getItem('ergon_aud_' + r.key); } catch (e) {} return AUD[a] ? a : (r.audience || 'taejae'); }
   function canView(r){
-    if (r.db) return !!sbUser;   // the database only returns showrooms this person may see
+    if (r.db) return !!sbUser || r.audience === 'public';   // the database only returns showrooms this person may see
     var a = audienceOf(r);
     if (a === 'public') return true;
     if (!sbUser) return false;
@@ -743,7 +755,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     return h + (tools || '') + '</div>';
   }
   // a visitor without sign-in starts the path at the showroom: they cannot go above it
-  var rootPath = function(r){ return signedIn() ? [['Showrooms', '#home'], [r.name, '#s/' + r.key]] : [[r.name, '#s/' + r.key]]; };
+  var rootPath = function(r){ return signedIn() ? [['Showrooms', '#showrooms'], [r.name, '#s/' + r.key]] : [[r.name, '#s/' + r.key]]; };
   function stageHTML(cfg){
     var s = cfg.stage;
     if (!s.length) return '<span class="shot"><span class="ph"><small>' + esc(cfg.empty) + '</small><b>' + esc(cfg.name) + '</b></span></span>';
@@ -769,7 +781,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
   }
   function showroomCfg(r){
     var s = lead(r), st = stateOf(s);
-    return { invite: r.key, tone: r.tone, path: signedIn() ? [['Showrooms', '#home'], [r.name, null]] : [[r.name, null]], state: st, when: r.sessions.length > 1 ? s.name + ' · ' + s.when : s.when, ctx: r.ctx, name: r.name,
+    return { invite: r.key, tone: r.tone, path: signedIn() ? [['Showrooms', '#showrooms'], [r.name, null]] : [[r.name, null]], state: st, when: r.sessions.length > 1 ? s.name + ' · ' + s.when : s.when, ctx: r.ctx, name: r.name,
       prog: r.progress[st] || '', dl: [['Host', r.host], ['Booths', plural(r.booths.length, 'booth')]], sessions: r.sessions, lead: s,
       stage: allPieces(r).map(function(x){ return { p: x.p, sub: x.b.label + ' · ' + x.p.part }; }), empty: r.booths.length ? 'Nothing sent yet' : 'Booths appear here as teams send work',
       tilesTitle: 'Booths', noTiles: roleIn(r) === 'host' && r.offeringId ? 'No booths yet. Put the class into teams; each team gets a booth and a studio. ' : 'Booths appear here as teams send work',
@@ -1017,7 +1029,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
 
   // ── INVITE: link, QR code and a printable invitation card, one click each ──
   var invRoom = null, invAud = 'public';
-  var inviteURL = function(r, a){ a = a || invAud; return location.origin + location.pathname + '#s/' + r.key + (a === r.audience ? '' : '/' + a); };
+  var inviteURL = function(r, a){ a = a || invAud; return location.origin + location.pathname + '#s/' + r.key + (r.db || a === r.audience ? '' : '/' + a); };
   function fillInvite(){
     var r = invRoom, url = inviteURL(r), q = qrModules(url), cv = $('inv-qr'), ctx = cv.getContext('2d');
     $('inv-link').value = url;
@@ -1025,7 +1037,15 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     ctx.clearRect(0, 0, cv.width, cv.height);
     if (q) drawQR(ctx, q, 0, 0, cv.width); else $('inv-note').textContent = 'The QR code could not load. Copy the link instead.';
   }
-  document.addEventListener('change', function(e){ if (e.target && e.target.name === 'inv-aud' && invRoom) { invAud = e.target.value; fillInvite(); } });
+  document.addEventListener('change', function(e){
+    if (!(e.target && e.target.name === 'inv-aud' && invRoom)) return;
+    var r = invRoom, v = e.target.value; invAud = v; fillInvite();
+    if (!r.db) return;
+    // a database showroom: Public publishes it to the public view, Class takes it back
+    sbFresh().then(function(){ return fetch(SUPABASE_URL + '/rest/v1/ergon_showrooms?showroom_id=eq.' + r.showroomId, { method: 'PATCH', headers: Object.assign(authHeaders(), { Prefer: 'return=minimal' }), body: JSON.stringify({ audience: v }) }); })
+      .then(function(res){ if (!res.ok) throw new Error('Could not save (' + res.status + ')'); r.audience = v; toast(v === 'public' ? 'Public: anyone with the link can open it' : 'Class only: invited people after sign-in'); })
+      .catch(function(ex){ toast(ex.message); invAud = r.audience; Array.prototype.forEach.call(document.querySelectorAll('input[name="inv-aud"]'), function(i){ i.checked = i.value === invAud; }); fillInvite(); });
+  });
   function qrModules(text){ if (!window.qrcode) return null; var q = window.qrcode(0, 'M'); q.addData(text); q.make(); return q; }
   function drawQR(ctx, q, x, y, size){
     var n = q.getModuleCount(), cell = size / (n + 8);
@@ -1047,7 +1067,8 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     invAud = r.audience || 'taejae';
     $('inv-head').style.background = r.tone; $('inv-title').textContent = r.name;
     $('inv-class-sub').textContent = r.course ? r.course + ' members, after sign-in' : 'Class members, after sign-in';
-    Array.prototype.forEach.call(document.querySelectorAll('input[name="inv-aud"]'), function(i){ i.checked = i.value === invAud; });
+    // Taejae-only is not stored yet, so a database showroom offers Public and Class
+    Array.prototype.forEach.call(document.querySelectorAll('input[name="inv-aud"]'), function(i){ i.checked = i.value === invAud; i.disabled = !!r.db && i.value === 'taejae'; i.closest('label').style.opacity = i.disabled ? '.45' : ''; });
     fillInvite();
     $('inv').showModal();
   }
@@ -1254,14 +1275,14 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     }).then(function(){ $('pw-wall').hidden = true; btn.disabled = false; toast('Password saved'); })
       .catch(function(ex){ err.textContent = ex.message; btn.disabled = false; btn.textContent = mode === 'first' ? 'Set password & continue' : 'Update password'; });
   });
-  function signOut(){ sbUser = null; PROFESSOR = null; clearSession(); location.hash = '#home'; render(); }
+  function signOut(){ sbUser = null; PROFESSOR = null; clearSession(); location.hash = '#home'; loadPublic().then(render); }
 
   // Start: restore a saved session, else show whatever needs no sign-in
   var saved = newestSession();
   if (saved && saved.access_token) {
     sbUser = saved; saveSession();
     sbFresh().then(function(ok){ if (ok) return enterApp(''); sbUser = null; clearSession(); render(); });
-  } else render();
+  } else loadPublic().then(render);
 })();
 </script>
 </body>

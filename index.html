@@ -204,6 +204,8 @@ a.tile:hover .t{text-decoration:underline;text-underline-offset:3px}
 .greet-h{font-size:clamp(28px,2.6vw,36px);font-weight:600;letter-spacing:-0.01em;line-height:1.2}
 .greet-s{margin-top:6px;font-size:18px;color:var(--muted)}
 .etile{position:relative}
+.tile.tbtn{width:100%;padding:0;border:none;background:none;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.tile.tbtn:hover .t{text-decoration:underline}
 .etile.gone>:first-child{opacity:.4}
 .etile .back{position:absolute;top:8px;right:8px;min-height:34px;padding:0 12px;border:none;background:#111111;color:#FFFFFF;font-size:13px}
 .lbar{align-items:center}
@@ -446,7 +448,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     return '';
   }
   function pieceOf(p){
-    return { key: 'p' + p.piece_id, type: KIND[p.kind] || 'link', kind: p.kind, name: p.title, part: p.part || String(p.kind).replace('_', ' '),
+    return { key: 'p' + p.piece_id, pieceId: p.piece_id, noteText: p.note || '', type: KIND[p.kind] || 'link', kind: p.kind, name: p.title, part: p.part || String(p.kind).replace('_', ' '),
       src: p.note || String(p.provider).replace('_', ' '), img: p.thumbnail_url || thumbOf(p.provider, p.file_id), id: p.file_id || '', url: p.url, provider: p.provider };
   }
   function roomOf(w, names){
@@ -825,14 +827,18 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
       factsTitle: 'About this booth', facts: [['Showroom', r.name]].concat(b.when ? [['When', b.when]] : []) };
     if (canEditBooth(r, b)) {
       cfg.tilesAct = editBtn('b:' + b.key);
-      if (editing.scope === 'b:' + b.key) cfg.tiles = b.pieces.map(function(p){ return xTile(pieceTile(p), 'entry:' + p.entryId, 'Remove ' + p.name + ' from this booth', false); }).concat([plusTile('piece', b.key)]);
+      if (editing.scope === 'b:' + b.key) cfg.tiles = b.pieces.map(function(p){
+        if (editing.piece === p.key) return formCard('piece-edit', p.key, { title: p.name, url: p.url, note: p.noteText });
+        var card = pieceTile(p).replace('<a class="tile" href="#p/' + p.key + '">', '<button type="button" class="tile tbtn" data-edit-piece="' + p.key + '" aria-label="Edit ' + esc(p.name) + '">').replace(/<\/a>$/, '</button>');
+        return xTile(card, 'entry:' + p.entryId, 'Remove ' + p.name + ' from this booth', false);
+      }).concat([plusTile('piece', b.key)]);
     }
     return cfg;
   }
   // ── EDITING (hosts and owners, for now) ──
   // Edit beside a list turns on an x on each card and a + card at the end. The x takes a piece out of a booth,
   // or hides a booth, a showroom or a studio (Show again brings it back). The + adds one with a title and a note.
-  var editing = { scope: null, adding: false };
+  var editing = { scope: null, adding: false, piece: null };
   function canEditBooth(r, b){ return r.db && !!b.studioId && signedIn() && roleIn(r) === 'host'; }
   function editBtn(scope){ var on = editing.scope === scope; return '<button type="button" class="hadd edit" data-edit="' + scope + '" aria-pressed="' + on + '">' + (on ? 'Done' : 'Edit') + '</button>'; }
   function xTile(inner, what, label, hidden){
@@ -843,21 +849,27 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
   var ADDTEXT = { piece: 'Add a piece by link', booth: 'Add a booth', showroom: 'Open a showroom', studio: 'Open a studio' };
   function plusTile(kind, target){
     if (!editing.adding) return '<button type="button" class="addtile pt" data-add-open="1"><span aria-hidden="true">+</span><small>' + ADDTEXT[kind] + '</small></button>';
+    return formCard(kind, target, {});
+  }
+  // the card used both to add and to change: a piece has a title, a link and a note; the others a title and a note
+  function formCard(kind, target, v){
+    var link = kind === 'piece' || kind === 'piece-edit';
     return '<form class="addcard" data-add-kind="' + kind + '" data-target="' + (target || '') + '" novalidate>' +
-      '<label>Title<input name="title" type="text" required placeholder="' + (kind === 'piece' ? 'What is it?' : 'Its name') + '"></label>' +
-      (kind === 'piece' ? '<label>Link<input name="url" type="url" required placeholder="https://"></label>' : '') +
-      '<label>Short note<input name="note" type="text" placeholder="Optional, shown under the title"></label>' +
+      '<label>Title<input name="title" type="text" required placeholder="' + (link ? 'What is it?' : 'Its name') + '" value="' + esc(v.title || '') + '"></label>' +
+      (link ? '<label>Link<input name="url" type="url" required placeholder="https://" value="' + esc(v.url || '') + '"></label>' : '') +
+      '<label>Short note<input name="note" type="text" placeholder="Optional, shown under the title" value="' + esc(v.note || '') + '"></label>' +
       '<p class="am" role="status" aria-live="polite"></p>' +
       '<span class="ab"><button type="button" data-add-cancel="1">Cancel</button><button type="submit" class="go">Save</button></span></form>';
   }
   function rerender(){ var y = window.scrollY; render(); window.scrollTo(0, y); var f = app.querySelector('.addcard'); if (f) f.title.focus(); }
-  function afterEdit(msg){ return function(){ toast(msg); editing.adding = false; return loadDB(); }; }
+  function afterEdit(msg){ return function(){ toast(msg); editing.adding = false; editing.piece = null; return loadDB(); }; }
   document.addEventListener('click', function(e){
-    var t = e.target.closest ? e.target.closest('[data-edit],[data-x],[data-add-open],[data-add-cancel],[data-edit-open]') : null; if (!t) return;
-    if (t.hasAttribute('data-edit')) { var k = t.getAttribute('data-edit'); editing.scope = editing.scope === k ? null : k; editing.adding = false; rerender(); return; }
+    var t = e.target.closest ? e.target.closest('[data-edit],[data-x],[data-add-open],[data-add-cancel],[data-edit-open],[data-edit-piece]') : null; if (!t) return;
+    if (t.hasAttribute('data-edit-piece')) { editing.piece = t.getAttribute('data-edit-piece'); editing.adding = false; rerender(); return; }
+    if (t.hasAttribute('data-edit')) { var k = t.getAttribute('data-edit'); editing.scope = editing.scope === k ? null : k; editing.adding = false; editing.piece = null; rerender(); return; }
     if (t.hasAttribute('data-edit-open')) { editing.scope = t.getAttribute('data-edit-open'); editing.adding = true; rerender(); return; }
-    if (t.hasAttribute('data-add-open')) { editing.adding = true; rerender(); return; }
-    if (t.hasAttribute('data-add-cancel')) { editing.adding = false; rerender(); return; }
+    if (t.hasAttribute('data-add-open')) { editing.adding = true; editing.piece = null; rerender(); return; }
+    if (t.hasAttribute('data-add-cancel')) { editing.adding = false; editing.piece = null; rerender(); return; }
     var v = t.getAttribute('data-x').split(':'), id = +v[1], hide = v[2] === '1', call;
     if (v[0] === 'entry') call = rpc('ergon_remove_entry', { p_entry_id: id });
     else if (v[0] === 'booth') call = rpc('ergon_set_booth_hidden', { p_booth_id: id, p_hidden: hide });
@@ -873,7 +885,13 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     var kind = f.getAttribute('data-add-kind'), target = f.getAttribute('data-target');
     var msg = f.querySelector('.am'), btn = f.querySelector('.go'), title = f.title.value.trim(), note = f.note.value.trim() || null, call;
     if (!title) { msg.textContent = 'Give it a title.'; f.title.focus(); return; }
-    if (kind === 'piece') {
+    if (kind === 'piece-edit') {
+      var eurl = f.url.value.trim();
+      if (!/^https?:\/\//i.test(eurl)) { msg.textContent = 'Paste a link that starts with https://'; f.url.focus(); return; }
+      var fp = find('p', target), einfo = linkInfo(eurl);
+      call = rpc('ergon_update_piece', { p_piece_id: fp.piece.pieceId, p_title: title, p_url: eurl, p_note: note, p_kind: einfo.kind === 'other' ? null : einfo.kind, p_provider: einfo.provider, p_file_id: einfo.id || null });
+    }
+    else if (kind === 'piece') {
       var url = f.url.value.trim();
       if (!/^https?:\/\//i.test(url)) { msg.textContent = 'Paste a link that starts with https://'; f.url.focus(); return; }
       var fb = find('b', target), info = linkInfo(url), ses = fb.booth.from ? null : lead(fb.room);
@@ -917,7 +935,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     var hash = location.hash.slice(1), parts = hash.split('/'), kind = parts[0], key = parts[1], f = key ? find(kind, key) : null;
     current = null; rot = 0; clearTimeout(autoTimer); clearHover(); hovering = false;
     var scopeNow = kind === 'b' ? 'b:' + key : kind === 's' ? 's:' + key : kind === 'showrooms' || kind === 'studios' ? kind : '';
-    if (editing.scope !== scopeNow) { editing.scope = null; editing.adding = false; }
+    if (editing.scope !== scopeNow) { editing.scope = null; editing.adding = false; editing.piece = null; }
     if (f && kind === 's' && AUD[parts[2]]) { try { sessionStorage.setItem('ergon_aud_' + f.room.key, parts[2]); } catch (e) {} }
     if (f) { try { sessionStorage.setItem('ergon_last_room', f.room.key); } catch (e) {} }
     if (f && !canView(f.room)) {

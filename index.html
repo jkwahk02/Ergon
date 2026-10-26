@@ -696,9 +696,10 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     ['Live', 'Prep', 'Past'].forEach(function(k){
       var sc = 'showrooms:' + k, ed = editing.scope === sc;
       var list = rooms.filter(function(r){ return statusOf(r) === k && (!r.hiddenAt || ed); });
-      var add = k !== 'Prep' || !host ? '' : ed ? plusTile('showroom') : '<div><button type="button" class="addtile" data-edit-open="' + sc + '"><span aria-hidden="true">+</span></button><div class="under"><b>Open a showroom</b><span>For an assessment, a lecture series or an event</span></div></div>';
-      var act = list.some(mine) || (add && ROOMS.some(mine)) ? editBtn(sc) : '';
-      if (list.length || add) h += listGroup('rooms-' + k, k, plural(list.length, 'showroom'), list.map(function(r){ return tile(r, ed); }).join('') + add, act);
+      var canAdd = k === 'Prep' && host && !!(PROFESSOR && PROFESSOR.isFaculty), add = ed && canAdd ? plusTile('showroom') : '';
+      var act = list.some(mine) || canAdd ? editBtn(sc) : '';
+      // an empty section says so; the + to open one shows only in Edit, as everywhere else
+      if (list.length || canAdd) h += listGroup('rooms-' + k, k, plural(list.length, 'showroom'), list.length || add ? list.map(function(r){ return tile(r, ed); }).join('') + add : '<p class="empty" style="grid-column:1/-1">No showrooms in ' + k + '.</p>', act);
     });
     return pageHead('Showrooms', 'Showrooms you host, exhibit in or are invited to.') +
       '<div class="gut"><div class="wrap">' + filterBar('showrooms', ['All', 'Hosting', 'Exhibiting', 'Invited']) + (h || '<p class="empty">No showrooms here yet.</p>') + '</div></div>' + foot();
@@ -732,9 +733,9 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     ['This term', 'Earlier'].forEach(function(k, i){
       var sc = 'studios:' + i, ed = editing.scope === sc;
       var list = cards.filter(function(c){ return c.term === k && (!c.o.archived || ed); });
-      var add = k !== 'This term' || !own ? '' : ed ? plusTile('studio') : '<div><button type="button" class="addtile" data-edit-open="' + sc + '"><span aria-hidden="true">+</span></button><div class="under"><b>Open a studio</b><span>For a lecture series, a talk or a project of your own</span></div></div>';
-      var act = list.some(editable) || add ? editBtn(sc) : '';
-      if (list.length || add) h += listGroup('studios-' + i, k, plural(list.length, 'studio'), list.map(function(c){ return tile(c, ed); }).join('') + add, act);
+      var canAdd = k === 'This term' && own, add = ed && canAdd ? plusTile('studio') : '';
+      var act = list.some(editable) || canAdd ? editBtn(sc) : '';
+      if (list.length || canAdd) h += listGroup('studios-' + i, k, plural(list.length, 'studio'), list.length || add ? list.map(function(c){ return tile(c, ed); }).join('') + add : '<p class="empty" style="grid-column:1/-1">No studios this term.</p>', act);
     });
     return pageHead('Studios', 'Where work is made before it goes to a showroom.') +
       '<div class="gut"><div class="wrap">' + filterBar('studios', ['All', 'Own', 'Member', 'Teaching']) + (h || '<p class="empty">No studios here yet.</p>') + '</div></div>' + foot();
@@ -970,11 +971,10 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
       .catch(function(ex){ toast(ex.message); btn.disabled = false; btn.textContent = 'Done'; });
   }
   document.addEventListener('click', function(e){
-    var t = e.target.closest ? e.target.closest('[data-edit],[data-x],[data-add-open],[data-add-cancel],[data-edit-open]') : null; if (!t) return;
+    var t = e.target.closest ? e.target.closest('[data-edit],[data-x],[data-add-open],[data-add-cancel]') : null; if (!t) return;
     if (t.hasAttribute('data-edit')) { var k = t.getAttribute('data-edit');
       if (editing.scope === k) { saveEdits(t); return; }
       editing.scope = editing.scope === k ? null : k; editing.adding = false; editing.drafts = {}; rerender(); return; }
-    if (t.hasAttribute('data-edit-open')) { editing.scope = t.getAttribute('data-edit-open'); editing.adding = true; rerender(); return; }
     if (t.hasAttribute('data-add-open')) { editing.adding = true; rerender(); return; }
     if (t.hasAttribute('data-add-cancel')) { editing.adding = false; rerender(); return; }
     if (t.hasAttribute('data-ask') && !confirm(t.getAttribute('data-ask'))) return;

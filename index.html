@@ -537,6 +537,8 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     return (st === 'On stage' ? 'Showing ' : st === 'Open' ? 'Send now · shows ' : st === 'Past' ? 'Shown ' : 'Shows ') + s.when + many;
   }
   var statusBg = { Live: '#F2C14E', Prep: 'rgba(255,255,255,.8)', Past: 'rgba(255,255,255,.5)' };
+  // the word on a booth: not shown yet → Prep, showing now → Live, shown → Past
+  var boothWord = function(st){ return st === 'On stage' ? 'Live' : st === 'Past' ? 'Past' : 'Prep'; };
   var chipBg = function(st){ return st === 'On stage' ? '#F2C14E' : st === 'Open' ? '#FFFFFF' : st === 'Past' ? 'rgba(255,255,255,.5)' : 'rgba(255,255,255,.8)'; };
   var plural = function(n, w){ return n + ' ' + w + (n === 1 ? '' : 's'); };
   var playIcon = '<span class="play" aria-hidden="true"><svg viewBox="0 0 24 24" width="40%" height="40%" fill="#111111"><path d="M8 5l11 7-11 7z"/></svg></span>';
@@ -776,11 +778,11 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
   }
   function page(cfg){
     var h = '<section class="poster gut" style="--tone:' + cfg.tone + '" aria-label="' + esc(cfg.name) + '"><div class="wrap">' + crumb(cfg.path, cfg.sib, cfg.invite && roleIn(find('s', cfg.invite).room) === 'host' ? (find('s', cfg.invite).room.offeringId ? '<button type="button" class="ibtn" data-teams="' + cfg.invite + '">Teams and booths</button>' : '') + '<button type="button" class="ibtn" data-invite="' + cfg.invite + '">Invite</button>' : '') +
-      '<div class="pgrid"><div class="id"><div class="state"><span class="chip" style="background:' + chipBg(cfg.state) + '">' + cfg.state + '</span><span>' + esc(cfg.when) + '</span></div>' +
+      '<div class="pgrid"><div class="id"><div class="state"><span class="chip" style="background:' + (statusBg[cfg.state] || chipBg(cfg.state)) + '">' + cfg.state + '</span><span>' + esc(cfg.when) + '</span></div>' +
       '<div class="ctx">' + esc(cfg.ctx) + '</div><h1>' + esc(cfg.name) + '</h1>' + (cfg.prog ? '<div class="prog">' + esc(cfg.prog) + '</div>' : '') +
       '<dl class="idl">' + cfg.dl.map(function(x){ return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd>'; }).join('') + '</dl>' +
       '</div><div class="stage" id="stage">' + stageHTML(cfg) + '</div></div>';
-    if (cfg.sessions && cfg.sessions.length > 1) h += '<div class="sess" role="group" aria-label="Sessions">' + cfg.sessions.map(function(s){ var st = stateOf(s); return '<div class="' + (s === cfg.lead ? 'on' : '') + '">' + esc(s.name) + '<small>' + esc(s.when) + (st === 'On stage' ? ' · on stage' : st === 'Past' ? ' · past' : '') + '</small></div>'; }).join('') + '</div>';
+    if (cfg.sessions && cfg.sessions.length > 1) h += '<div class="sess" role="group" aria-label="Sessions">' + cfg.sessions.map(function(s){ var st = stateOf(s); return '<div class="' + (s === cfg.lead ? 'on' : '') + '">' + esc(s.name) + '<small>' + esc(s.when) + (st === 'On stage' ? ' · showing' : st === 'Past' ? ' · shown' : '') + '</small></div>'; }).join('') + '</div>';
     h += '</div></section><div class="gut"><div class="wrap">';
     h += '<section class="sec" aria-labelledby="t-h"><div class="sec-h"><h2 id="t-h">' + esc(cfg.tilesTitle) + '</h2>' + (cfg.tilesAct || '') + '</div>' + (cfg.tiles.length ? '<div class="tiles">' + cfg.tiles.join('') + '</div>' : '<div class="empty">' + esc(cfg.noTiles) + (cfg.emptyAct || '') + '</div>') + '</section>';
     h += '<section class="sec" aria-labelledby="f-h"><div class="sec-h"><h2 id="f-h">' + esc(cfg.factsTitle) + '</h2></div><dl class="facts">' + cfg.facts.map(function(x){ return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd>'; }).join('') + '</dl></section>';
@@ -792,7 +794,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
   }
   function showroomCfg(r){
     var s = lead(r), st = stateOf(s);
-    return { invite: r.key, tone: r.tone, path: signedIn() ? [['Showrooms', '#showrooms'], [r.name, null]] : [[r.name, null]], state: st, when: r.sessions.length > 1 ? s.name + ' · ' + s.when : s.when, ctx: r.ctx, name: r.name,
+    return { invite: r.key, tone: r.tone, path: signedIn() ? [['Showrooms', '#showrooms'], [r.name, null]] : [[r.name, null]], state: statusOf(r), when: lineOf(r), ctx: r.ctx, name: r.name,
       prog: r.progress[st] || '', dl: [['Host', r.host], ['Booths', plural(r.booths.length, 'booth')]], sessions: r.sessions, lead: s,
       stage: allPieces(r).map(function(x){ return { p: x.p, sub: x.b.label + ' · ' + x.p.part }; }), empty: r.booths.length ? 'Nothing sent yet' : 'Booths appear here as teams send work',
       tilesTitle: 'Booths', noTiles: roleIn(r) === 'host' && r.offeringId ? 'No booths yet. Put the class into teams; each team gets a booth and a studio. ' : 'Booths appear here as teams send work',
@@ -816,7 +818,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     var n = r.booths.length, prev = r.booths[(j - 1 + n) % n], next = r.booths[(j + 1) % n], s = lead(r);
     var cfg = { tone: r.tone, path: rootPath(r).concat([[b.label + ' · ' + b.name, null]]),
       sib: n > 1 ? { prev: ['#b/' + prev.key, prev.label], next: ['#b/' + next.key, next.label], pos: (j + 1) + ' / ' + n } : null,
-      state: boothState(r, b), when: b.when || (r.sessions.length > 1 ? s.name + ' · ' + s.when : s.when), ctx: b.label, name: b.name, prog: b.prog,
+      state: boothWord(boothState(r, b)), when: b.when || (r.sessions.length > 1 ? s.name + ' · ' + s.when : s.when), ctx: b.label, name: b.name, prog: b.prog,
       dl: b.people.concat([['Pieces', plural(b.pieces.length, 'piece')]]),
       stage: b.pieces.map(function(p){ return { p: p, sub: p.part }; }), empty: 'Nothing sent yet',
       tilesTitle: 'Pieces', noTiles: 'Nothing sent yet', tiles: b.pieces.map(pieceTile),
@@ -898,9 +900,9 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     if (n > 1) path.push([b.label + ' · ' + b.name, '#b/' + b.key]);
     path.push([n > 1 ? String(p.part).split(' · ')[0] : b.label + ' · ' + b.name, null]);
     var sib = n > 1 ? { prev: ['#p/' + b.pieces[(k - 1 + n) % n].key, String(b.pieces[(k - 1 + n) % n].part).split(' · ')[0]], next: ['#p/' + b.pieces[(k + 1) % n].key, String(b.pieces[(k + 1) % n].part).split(' · ')[0]], pos: (k + 1) + ' / ' + n } : null;
-    var st = boothState(r, b);
+    var st = boothWord(boothState(r, b));
     var h = '<section class="poster band gut" style="--tone:' + r.tone + '" aria-label="' + esc(p.name) + '"><div class="wrap">' + crumb(path, sib) +
-      '<div class="brow"><div class="state"><span class="chip" style="background:' + chipBg(st) + '">' + st + '</span><span>' + esc(b.when || '') + '</span></div>' +
+      '<div class="brow"><div class="state"><span class="chip" style="background:' + statusBg[st] + '">' + st + '</span><span>' + esc(b.when || '') + '</span></div>' +
       '<div class="bt"><span class="ctx">' + esc(p.part) + '</span><h1>' + esc(p.name) + '</h1></div>' +
       '<div class="acts"><a class="go" href="' + OPEN(p) + '" target="_blank" rel="noopener">' + (p.type === 'video' ? 'Open in Google Drive' : 'Present as a slideshow') + '</a><a class="src" href="' + SOURCE(p) + '" target="_blank" rel="noopener">' + (p.type === 'slides' ? 'Google Slides ↗' : 'Original ↗') + '</a></div></div></div></section>' +
       '<div class="full"><iframe src="' + EMBED(p) + '" title="' + esc(p.name) + '" allow="autoplay; fullscreen" allowfullscreen></iframe></div><div class="gut"><div class="wrap">';

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Ergon — Taejae University Showrooms</title>
+<title>Ergon — Taejae University</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Noto+Sans+KR:wght@300;400;500;700&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js" defer></script>
@@ -583,7 +583,8 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
 
   // ── HEADER: everyone signed in gets Ergon; a visitor without sign-in sees only Taejae and the showroom ──
   // 'Ergon Pro' for faculty, 'Ergon' for students and guests (Pro marks the faculty versions of the suite apps)
-  function appName(){ return PROFESSOR && PROFESSOR.isFaculty ? 'Ergon Pro' : 'Ergon'; }
+  // one tab title on every page, as in Telos and TaeSylla
+  var TAB_TITLE = 'Ergon — Taejae University';
   function header(where, publicRoom){
     var top = $('top');
     var hostLink = '<a class="hostname" href="#s/' + (publicRoom ? publicRoom.key : '') + '">태재대학교' + (publicRoom ? ' · <b>' + esc(publicRoom.name) + '</b>' : '') + '</a>';
@@ -606,7 +607,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
   function liveRooms(){ return ROOMS.filter(function(r){ return !r.hiddenAt; }).map(roomCard).filter(function(c){ return c.st !== 'Past'; }).sort(function(a, b){ return ORDER[a.st] - ORDER[b.st]; }); }
   function cardStage(c){
     var r = c.r, pcs = allPieces(r), pc = pcs.length ? pcs[rot % pcs.length] : null;
-    return '<a class="shot" href="' + (pc ? '#p/' + pc.p.key : '#s/' + r.key) + '">' + (pc ? visual(pc.p) + (pc.p.type === 'video' ? playIcon : '') : '<span class="ph"><small>' + esc(c.st) + '</small><b>Work appears here once booths fill</b></span>') + '</a>' +
+    return '<a class="shot" href="' + (pc ? '#p/' + pc.p.key : '#s/' + r.key) + '">' + (pc ? visual(pc.p) + (pc.p.type === 'video' ? playIcon : '') : '<span class="ph"><small>' + esc(c.status) + '</small><b>Work appears here once booths fill</b></span>') + '</a>' +
       (pc ? '<div class="cap"><span><b>' + esc(pc.p.name) + '</b> · ' + esc(pc.b.label) + '</span><span>' + ((rot % pcs.length) + 1) + ' / ' + pcs.length + '</span></div>' : '');
   }
   // the greeting every suite Home opens with: first name, today's date and the term
@@ -940,24 +941,24 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     if (f) { try { sessionStorage.setItem('ergon_last_room', f.room.key); } catch (e) {} }
     if (f && !canView(f.room)) {
       header('', sbUser ? null : f.room); showWall(false);
-      app.innerHTML = gateHTML(f.room); document.title = f.room.name + ' · ' + appName(); window.scrollTo(0, 0); return;
+      app.innerHTML = gateHTML(f.room); document.title = TAB_TITLE; window.scrollTo(0, 0); return;
     }
     if (!sbUser && !f) { header(''); app.innerHTML = ''; wallFor(null); showWall(true); return; }
     showWall(false);
-    if (f && kind === 'p') { header('showrooms', f.room); app.innerHTML = leafHTML(f.room, f.booth, f.piece, f.k); document.title = f.piece.name + ' · ' + appName(); }
+    if (f && kind === 'p') { header('showrooms', f.room); app.innerHTML = leafHTML(f.room, f.booth, f.piece, f.k); document.title = TAB_TITLE; }
     else if (f && kind === 'b') {
       if (f.booth.pieces.length === 1 && !canEditBooth(f.room, f.booth)) { location.replace('#p/' + f.booth.pieces[0].key); return; }   // a single-piece booth opens on its piece, except for a host who may edit it
-      header('showrooms', f.room); current = boothCfg(f.room, f.booth, f.j); app.innerHTML = page(current); document.title = f.booth.name + ' · ' + appName();
+      header('showrooms', f.room); current = boothCfg(f.room, f.booth, f.j); app.innerHTML = page(current); document.title = TAB_TITLE;
     }
-    else if (f && kind === 's') { header('showrooms', f.room); current = editShowroomTiles(f.room, showroomCfg(f.room)); app.innerHTML = page(current); document.title = f.room.name + ' · ' + appName(); }
-    else if (kind === 'about') { header('about'); app.innerHTML = aboutHTML(); document.title = 'About · ' + appName(); }
-    else if (kind === 'settings') { header('settings'); app.innerHTML = settingsHTML(); document.title = 'Settings · ' + appName(); }
+    else if (f && kind === 's') { header('showrooms', f.room); current = editShowroomTiles(f.room, showroomCfg(f.room)); app.innerHTML = page(current); document.title = TAB_TITLE; }
+    else if (kind === 'about') { header('about'); app.innerHTML = aboutHTML(); document.title = TAB_TITLE; }
+    else if (kind === 'settings') { header('settings'); app.innerHTML = settingsHTML(); document.title = TAB_TITLE; }
     else {
       // Home: the live-showroom carousel, every showroom and every studio. Showrooms and Studios: just that list.
       var tab = kind === 'studios' ? 'studios' : kind === 'showrooms' ? 'showrooms' : 'home';
       header(tab);
-      if (tab === 'home') { app.innerHTML = homeHTML(); document.title = appName() + ' — Taejae University Showrooms'; placeDeck(); current = 'home'; }
-      else { app.innerHTML = tab === 'studios' ? studiosHTML() : showroomsHTML(); document.title = (tab === 'studios' ? 'Studios' : 'Showrooms') + ' · ' + appName(); }
+      if (tab === 'home') { app.innerHTML = homeHTML(); document.title = TAB_TITLE; placeDeck(); current = 'home'; }
+      else { app.innerHTML = tab === 'studios' ? studiosHTML() : showroomsHTML(); document.title = TAB_TITLE; }
     }
     window.scrollTo(0, 0);
   }
@@ -993,7 +994,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     var peek = function(sel, k){
       var b = deck.querySelector(sel); if (!b) return; var c = live[((k % n) + n) % n];
       var left = sel === '.peek.l';
-      b.innerHTML = '<span class="arw" aria-hidden="true">' + (left ? '←' : '→') + '</span><span class="chip" style="background:' + chipBg(c.st) + '">' + c.st + '</span><b>' + esc(c.r.name) + '</b><small>' + esc(c.when) + '</small><span class="bar" aria-hidden="true"><i></i></span>';
+      b.innerHTML = '<span class="arw" aria-hidden="true">' + (left ? '←' : '→') + '</span><span class="chip" style="background:' + statusBg[c.status] + '">' + c.status + '</span><b>' + esc(c.r.name) + '</b><small>' + esc(c.when) + '</small><span class="bar" aria-hidden="true"><i></i></span>';
       b.setAttribute('aria-label', (left ? 'Previous: ' : 'Next: ') + c.r.name);
     };
     peek('.peek.l', i - 1); peek('.peek.r', i + 1);

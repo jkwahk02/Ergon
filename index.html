@@ -212,8 +212,8 @@ a.tile:hover .t{text-decoration:underline;text-underline-offset:3px}
 .lbar .lleft{margin-right:auto}
 .lbar .lroles{display:flex;flex-wrap:wrap;gap:6px}
 .hadd.edit{font-weight:500}
-.etile .ex{position:absolute;top:8px;right:8px;width:34px;height:34px;border:none;border-radius:50%;background:rgba(17,17,17,.78);color:#FFFFFF;font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center}
-.etile .ex:hover{background:#8A3A0A}
+.etile .ex,.pedit>.ex{position:absolute;top:8px;right:8px;width:34px;height:34px;border:none;border-radius:50%;background:rgba(17,17,17,.78);color:#FFFFFF;font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center}
+.etile .ex:hover,.pedit>.ex:hover{background:#8A3A0A}
 .addtile.pt{flex-direction:column;gap:6px;aspect-ratio:16/9;align-self:start}
 .addtile.pt small{font-size:13px}
 .addcard{display:flex;flex-direction:column;gap:10px;padding:16px;box-shadow:inset 0 0 0 1px var(--line);align-self:start}
@@ -222,6 +222,9 @@ a.tile:hover .t{text-decoration:underline;text-underline-offset:3px}
 .addcard .am{margin:0;min-height:18px;font-size:13px;color:var(--warn)}
 .addcard .ab{display:flex;justify-content:flex-end;gap:8px}
 .addcard .ab button{min-height:40px;padding:0 16px;border:1px solid var(--line);background:var(--bg);font-size:14px}
+/* a piece being edited: thumbnail and form are one card, and its x removes the whole card */
+.pedit{position:relative;align-self:start;background:var(--tile)}
+.pedit .addcard{box-shadow:none;padding-top:4px}
 .addcard .ab .go{border:none;background:var(--accent);color:#FFFFFF;font-weight:500}
 .empty{padding:28px 0;color:var(--muted)}
 .gatebtn{min-height:46px;padding:0 20px;border:none;background:#FFFFFF;color:#111111;font-size:15px;font-weight:500}
@@ -829,9 +832,9 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     if (canEditBooth(r, b)) {
       cfg.tilesAct = editBtn('b:' + b.key);
       if (editing.scope === 'b:' + b.key) cfg.tiles = b.pieces.map(function(p){
-        if (editing.piece === p.key) return formCard('piece-edit', p.key, { title: p.name, url: p.url, note: p.noteText });
-        var card = pieceTile(p).replace('<a class="tile" href="#p/' + p.key + '">', '<button type="button" class="tile tbtn" data-edit-piece="' + p.key + '" aria-label="Edit ' + esc(p.name) + '">').replace(/<\/a>$/, '</button>');
-        return xTile(card, 'entry:' + p.entryId, 'Remove ' + p.name + ' from this booth', false);
+        var thumb = '<div class="tile"><span class="one">' + visual(p) + (p.type === 'video' ? playIcon : '') + '</span></div>';
+        return '<div class="pedit">' + thumb + formCard('piece-edit', p.key, editing.drafts[p.key] || pieceValues(p)) +
+          '<button type="button" class="ex" data-x="entry:' + p.entryId + ':1" data-ask="Remove “' + esc(p.name) + '” from this booth?" aria-label="Remove ' + esc(p.name) + ' from this booth">×</button></div>';
       }).concat([plusTile('piece', b.key)]);
     }
     return cfg;
@@ -839,7 +842,9 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
   // ── EDITING (hosts and owners, for now) ──
   // Edit beside a list turns on an x on each card and a + card at the end. The x takes a piece out of a booth,
   // or hides a booth, a showroom or a studio (Show again brings it back). The + adds one with a title and a note.
-  var editing = { scope: null, adding: false, piece: null };
+  // On a booth, Edit turns every piece into its form; what is typed is kept in drafts and saved all at once on Done.
+  var editing = { scope: null, adding: false, drafts: {} };
+  function pieceValues(p){ return { title: p.name, url: p.url, note: p.noteText || '' }; }
   function canEditBooth(r, b){ return r.db && !!b.studioId && signedIn() && roleIn(r) === 'host'; }
   function editBtn(scope){ var on = editing.scope === scope; return '<button type="button" class="hadd edit" data-edit="' + scope + '" aria-pressed="' + on + '">' + (on ? 'Done' : 'Edit') + '</button>'; }
   function xTile(inner, what, label, hidden){
@@ -854,23 +859,50 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
   }
   // the card used both to add and to change: a piece has a title, a link and a note; the others a title and a note
   function formCard(kind, target, v){
-    var link = kind === 'piece' || kind === 'piece-edit';
-    return '<form class="addcard" data-add-kind="' + kind + '" data-target="' + (target || '') + '" novalidate>' +
+    var link = kind === 'piece' || kind === 'piece-edit', bulk = kind === 'piece-edit';
+    return '<form class="addcard' + (bulk ? ' bulk' : '') + '" data-add-kind="' + kind + '" data-target="' + (target || '') + '" novalidate>' +
       '<label>Title<input name="title" type="text" required placeholder="' + (link ? 'What is it?' : 'Its name') + '" value="' + esc(v.title || '') + '"></label>' +
       (link ? '<label>Link<input name="url" type="url" required placeholder="https://" value="' + esc(v.url || '') + '"></label>' : '') +
       '<label>Short note<input name="note" type="text" placeholder="Optional, shown under the title" value="' + esc(v.note || '') + '"></label>' +
       '<p class="am" role="status" aria-live="polite"></p>' +
-      '<span class="ab"><button type="button" data-add-cancel="1">Cancel</button><button type="submit" class="go">Save</button></span></form>';
+      (bulk ? '' : '<span class="ab"><button type="button" data-add-cancel="1">Cancel</button><button type="submit" class="go">Save</button></span>') + '</form>';
   }
-  function rerender(){ var y = window.scrollY; render(); window.scrollTo(0, y); var f = app.querySelector('.addcard'); if (f) f.title.focus(); }
-  function afterEdit(msg){ return function(){ toast(msg); editing.adding = false; editing.piece = null; return loadDB(); }; }
+  function rerender(){ var y = window.scrollY; render(); window.scrollTo(0, y); var f = app.querySelector('.addcard:not(.bulk)'); if (f) f.title.focus(); }
+  function afterEdit(msg){ return function(){ toast(msg); editing.adding = false; return loadDB(); }; }
+  document.addEventListener('input', function(e){
+    var f = e.target.form; if (!f || f.getAttribute('data-add-kind') !== 'piece-edit') return;
+    editing.drafts[f.getAttribute('data-target')] = { title: f.title.value, url: f.url.value, note: f.note.value };
+  });
+  // Done on a booth: check every changed piece, then save them together
+  function saveBooth(btn){
+    var forms = Array.prototype.slice.call(app.querySelectorAll('.addcard.bulk')), calls = [], bad = null;
+    forms.forEach(function(f){
+      var fp = find('p', f.getAttribute('data-target')), o = pieceValues(fp.piece), msg = f.querySelector('.am');
+      var title = f.title.value.trim(), url = f.url.value.trim(), note = f.note.value.trim();
+      msg.textContent = '';
+      if (title === o.title && url === o.url && note === (o.note || '')) return;
+      if (!title) { msg.textContent = 'Give it a title.'; bad = bad || f.title; return; }
+      if (!/^https?:\/\//i.test(url)) { msg.textContent = 'Paste a link that starts with https://'; bad = bad || f.url; return; }
+      var info = linkInfo(url);
+      calls.push(function(){ return rpc('ergon_update_piece', { p_piece_id: fp.piece.pieceId, p_title: title, p_url: url, p_note: note || null, p_kind: info.kind === 'other' ? null : info.kind, p_provider: info.provider, p_file_id: info.id || null }); });
+    });
+    if (bad) { bad.focus(); return; }
+    var done = function(){ editing.scope = null; editing.adding = false; editing.drafts = {}; };
+    if (!calls.length) { done(); rerender(); return; }
+    btn.disabled = true; btn.textContent = 'Saving…';
+    Promise.all(calls.map(function(c){ return c(); }))
+      .then(function(){ done(); toast(plural(calls.length, 'piece') + ' saved'); return loadDB(); }).then(rerender)
+      .catch(function(ex){ toast(ex.message); btn.disabled = false; btn.textContent = 'Done'; });
+  }
   document.addEventListener('click', function(e){
-    var t = e.target.closest ? e.target.closest('[data-edit],[data-x],[data-add-open],[data-add-cancel],[data-edit-open],[data-edit-piece]') : null; if (!t) return;
-    if (t.hasAttribute('data-edit-piece')) { editing.piece = t.getAttribute('data-edit-piece'); editing.adding = false; rerender(); return; }
-    if (t.hasAttribute('data-edit')) { var k = t.getAttribute('data-edit'); editing.scope = editing.scope === k ? null : k; editing.adding = false; editing.piece = null; rerender(); return; }
+    var t = e.target.closest ? e.target.closest('[data-edit],[data-x],[data-add-open],[data-add-cancel],[data-edit-open]') : null; if (!t) return;
+    if (t.hasAttribute('data-edit')) { var k = t.getAttribute('data-edit');
+      if (editing.scope === k && k.indexOf('b:') === 0) { saveBooth(t); return; }
+      editing.scope = editing.scope === k ? null : k; editing.adding = false; editing.drafts = {}; rerender(); return; }
     if (t.hasAttribute('data-edit-open')) { editing.scope = t.getAttribute('data-edit-open'); editing.adding = true; rerender(); return; }
-    if (t.hasAttribute('data-add-open')) { editing.adding = true; editing.piece = null; rerender(); return; }
-    if (t.hasAttribute('data-add-cancel')) { editing.adding = false; editing.piece = null; rerender(); return; }
+    if (t.hasAttribute('data-add-open')) { editing.adding = true; rerender(); return; }
+    if (t.hasAttribute('data-add-cancel')) { editing.adding = false; rerender(); return; }
+    if (t.hasAttribute('data-ask') && !confirm(t.getAttribute('data-ask'))) return;
     var v = t.getAttribute('data-x').split(':'), id = +v[1], hide = v[2] === '1', call;
     if (v[0] === 'entry') call = rpc('ergon_remove_entry', { p_entry_id: id });
     else if (v[0] === 'booth') call = rpc('ergon_set_booth_hidden', { p_booth_id: id, p_hidden: hide });
@@ -884,15 +916,10 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     var f = e.target; if (!f.classList || !f.classList.contains('addcard')) return;
     e.preventDefault();
     var kind = f.getAttribute('data-add-kind'), target = f.getAttribute('data-target');
+    if (kind === 'piece-edit') { var db = app.querySelector('[data-edit][aria-pressed="true"]'); if (db) saveBooth(db); return; }
     var msg = f.querySelector('.am'), btn = f.querySelector('.go'), title = f.title.value.trim(), note = f.note.value.trim() || null, call;
     if (!title) { msg.textContent = 'Give it a title.'; f.title.focus(); return; }
-    if (kind === 'piece-edit') {
-      var eurl = f.url.value.trim();
-      if (!/^https?:\/\//i.test(eurl)) { msg.textContent = 'Paste a link that starts with https://'; f.url.focus(); return; }
-      var fp = find('p', target), einfo = linkInfo(eurl);
-      call = rpc('ergon_update_piece', { p_piece_id: fp.piece.pieceId, p_title: title, p_url: eurl, p_note: note, p_kind: einfo.kind === 'other' ? null : einfo.kind, p_provider: einfo.provider, p_file_id: einfo.id || null });
-    }
-    else if (kind === 'piece') {
+    if (kind === 'piece') {
       var url = f.url.value.trim();
       if (!/^https?:\/\//i.test(url)) { msg.textContent = 'Paste a link that starts with https://'; f.url.focus(); return; }
       var fb = find('b', target), info = linkInfo(url), ses = fb.booth.from ? null : lead(fb.room);
@@ -936,7 +963,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     var hash = location.hash.slice(1), parts = hash.split('/'), kind = parts[0], key = parts[1], f = key ? find(kind, key) : null;
     current = null; rot = 0; clearTimeout(autoTimer); clearHover(); hovering = false;
     var scopeNow = kind === 'b' ? 'b:' + key : kind === 's' ? 's:' + key : kind === 'showrooms' || kind === 'studios' ? kind : '';
-    if (editing.scope !== scopeNow) { editing.scope = null; editing.adding = false; editing.piece = null; }
+    if (editing.scope !== scopeNow) { editing.scope = null; editing.adding = false; editing.drafts = {}; }
     if (f && kind === 's' && AUD[parts[2]]) { try { sessionStorage.setItem('ergon_aud_' + f.room.key, parts[2]); } catch (e) {} }
     if (f) { try { sessionStorage.setItem('ergon_last_room', f.room.key); } catch (e) {} }
     if (f && !canView(f.room)) {

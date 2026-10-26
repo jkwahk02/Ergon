@@ -608,18 +608,9 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     h += '<div class="gut"><div class="wrap"><section class="sec" aria-labelledby="rooms-h"><div class="sec-h"><h2 id="rooms-h">Showrooms</h2><button type="button" class="hadd" data-new="showroom">+ Open a showroom</button></div><div class="tiles wide">';
     h += ROOMS.filter(function(r){ return !r.hiddenAt; }).map(function(r){ var c = roomCard(r); return '<a class="rtile" href="#s/' + r.key + '" style="background:' + r.tone + '"><span class="state" style="color:rgba(255,255,255,.85)"><span class="chip" style="background:' + statusBg[c.status] + '">' + c.status + '</span><span>' + esc(c.when) + '</span></span><span class="rs">' + esc(r.ctx) + '</span><span class="rn">' + esc(r.name) + '</span></a>'; }).join('');
     h += '</div></section>';
-    h += '<section class="sec" aria-labelledby="studios-h" id="studios-sec"><div class="sec-h"><h2 id="studios-h">Studios</h2><button type="button" class="hadd" data-new="studio">+ Open a studio</button></div>';
-    var me = PROFESSOR && PROFESSOR.id;
-    STUDIOS.filter(function(g){ return g.owner ? g.owner === me : g.hostOf ? roleIn(find('s', g.hostOf).room) === 'host' : true; }).concat(
-      STUDIOS.some(function(g){ return g.owner && g.owner === me; }) ? [] : [{ group: 'Your studio', meta: 'Your own lectures and projects · private until you send them to a showroom', items: [{ who: PROFESSOR ? PROFESSOR.name : '', name: 'Nothing here yet', note: 'Add a lecture, a project or your team’s work', imgs: [] }] }]
-    ).forEach(function(g){
-      h += '<div class="group"><b>' + esc(g.group) + '</b><span class="lbl">' + esc(g.meta) + (g.teamsOf && find('s', g.teamsOf) && roleIn(find('s', g.teamsOf).room) === 'host' ? ' · <button type="button" class="hadd" data-teams="' + g.teamsOf + '">Edit teams</button>' : '') + '</span></div><div class="tiles">';
-      h += g.items.filter(function(o){ return !o.archived; }).map(function(o){
-        var inner = mosaic(o.imgs.map(function(src){ return '<img src="' + src + '" alt="">'; })) +
-          '<span class="row"><span>' + esc(o.who) + '</span><span></span></span><span class="t">' + esc(o.name) + '</span><span class="s">' + esc(o.note) + '</span>';
-        return o.href ? '<a class="tile" href="' + o.href + '">' + inner + '</a>' : '<div class="tile">' + inner + '</div>';
-      }).join('') + '</div>';
-    });
+    // Studios come after the MVP; until then Home only says so
+    h += '<section class="sec" aria-labelledby="studios-h" id="studios-sec"><div class="sec-h"><h2 id="studios-h">Studios</h2><span class="lbl">Coming soon</span></div>' +
+      '<p class="empty">Studios are where teams and lecturers make their work before it goes to a showroom. They are coming soon.</p>';
     return h + '</section></div></div>' + foot();
   }
 
@@ -666,40 +657,11 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
   }
   // Studios have no state: they group by term. A studio named for an earlier "Fall/Spring YYYY" than today's term is Earlier.
   function termOf(label){ var m = /(Spring|Fall)\s+(\d{4})/.exec(label || ''); return m ? +m[2] * 2 + (m[1] === 'Fall' ? 1 : 0) : null; }
+  // Studios come after the MVP. Booths still keep their work in studios behind the scenes.
   function studiosHTML(){
-    var me = PROFESSOR && PROFESSOR.id, pick = listRole.studios;
-    var groups = STUDIOS.filter(function(g){ return g.owner ? g.owner === me : g.hostOf ? roleIn(find('s', g.hostOf).room) === 'host' : true; });
-    var roleOf = function(g){ return g.owner ? 'Own' : g.group === 'Your teams' ? 'Member' : 'Teaching'; };
-    var WORD = { Own: 'Owner', Member: 'Member', Teaching: 'Teaching' };
-    var td = new Date(), cur = td.getFullYear() * 2 + (td.getMonth() >= 7 ? 1 : 0);   // this term from today: Aug–Dec Fall, Jan–Jul Spring
-    var cards = [];
-    groups.forEach(function(g){
-      var role = roleOf(g), t = termOf(g.group), term = t && t < cur ? 'Earlier' : 'This term';
-      if (pick !== 'All' && role !== pick) return;
-      g.items.forEach(function(o){ cards.push({ g: g, o: o, role: role, term: term }); });
-    });
-    var editable = function(c){ return !!(c.o.studioId && c.o.canEdit); };
-    var tile = function(c, ed){
-      var o = c.o;
-      if (ed && !editable(c)) return lockCard('<div class="tile">' + mosaic(o.imgs.map(function(src){ return '<img src="' + src + '" alt="">'; })) + '</div>', 'Only its owner or instructor can edit this studio.');
-      if (ed && editable(c)) return itemCard('<div class="tile">' + mosaic(o.imgs.map(function(src){ return '<img src="' + src + '" alt="">'; })) + '</div>', 'studio:' + o.studioId, { title: o.name, note: o.summary || '' }, o.name, o.archived);
-      var inner = mosaic(o.imgs.map(function(src){ return '<img src="' + src + '" alt="">'; })) +
-        '<span class="row"><span>' + esc(o.who) + '</span><span>' + esc(c.g.group === 'Your studio' ? '' : c.g.group) + '</span></span><span class="t">' + esc(o.name) + '</span>';
-      var box = o.href ? '<a class="tile" href="' + o.href + '">' + inner + '</a>' : '<div class="tile">' + inner + '</div>';
-      var card = '<div>' + box + '<div class="under"><b>' + WORD[c.role] + '</b><span>' + esc(o.note) + '</span>' +
-        (c.g.teamsOf && find('s', c.g.teamsOf) && roleIn(find('s', c.g.teamsOf).room) === 'host' && c.o === c.g.items[0] ? '<button type="button" class="hadd" data-teams="' + c.g.teamsOf + '">Edit teams</button>' : '') + '</div></div>';
-      return card;
-    };
-    var own = pick === 'All' || pick === 'Own', h = '';
-    ['This term', 'Earlier'].forEach(function(k, i){
-      var sc = 'studios:' + i, ed = editing.scope === sc;
-      var list = cards.filter(function(c){ return c.term === k && (!c.o.archived || ed); });
-      var canAdd = k === 'This term' && own, add = ed && canAdd ? plusTile('studio') : '';
-      var act = list.some(editable) || canAdd ? editBtn(sc) : '';
-      if (list.length || canAdd) h += listGroup('studios-' + i, k, plural(list.length, 'studio'), list.length || add ? list.map(function(c){ return tile(c, ed); }).join('') + add : '<p class="empty" style="grid-column:1/-1">No studios this term.</p>', act);
-    });
     return pageHead('Studios', 'Where work is made before it goes to a showroom.') +
-      '<div class="gut"><div class="wrap">' + filterBar('studios', ['All', 'Own', 'Member', 'Teaching']) + (h || '<p class="empty">No studios here yet.</p>') + '</div></div>' + foot();
+      '<div class="gut"><div class="wrap"><div class="sec"><div class="sec-h"><h2>Coming soon</h2></div>' +
+      '<p class="empty">Studios are where teams and lecturers will make their work before sending it to a showroom. For now, hosts add work to booths directly from each showroom.</p></div></div></div>' + foot();
   }
   document.addEventListener('click', function(e){
     var t = e.target.closest && e.target.closest('[data-lrole]'); if (!t) return;

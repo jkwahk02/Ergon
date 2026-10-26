@@ -239,6 +239,8 @@ a.tile:hover .t{text-decoration:underline;text-underline-offset:3px}
 .pedit{position:relative;align-self:start;background:var(--tile)}
 .pedit .addcard{box-shadow:none;padding-top:4px}
 .pedit.gone>:first-child{opacity:.4}
+.pedit.lock>:first-child{opacity:.45}
+.pedit.lock .why{margin:0;padding:12px 16px 16px;font-size:13px;color:var(--muted)}
 .pedit>.back{position:absolute;top:8px;right:8px;min-height:34px;padding:0 12px;border:none;background:#111111;color:#FFFFFF;font-size:13px}
 .addcard .ab .go{border:none;background:var(--accent);color:#FFFFFF;font-weight:500}
 .empty{padding:28px 0;color:var(--muted)}
@@ -684,7 +686,9 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     var mine = function(r){ return r.db && roleIn(r) === 'host'; };
     var thumb = function(r){ var c = roomCard(r); return '<div class="rtile" style="background:' + r.tone + '"><span class="state" style="color:rgba(255,255,255,.85)"><span class="chip" style="background:' + statusBg[c.status] + '">' + c.status + '</span><span>' + esc(c.when) + '</span></span><span class="rs">' + esc(r.ctx) + '</span><span class="rn">' + esc(r.name) + '</span></div>'; };
     var tile = function(r, ed){
-      return ed && mine(r) ? itemCard(thumb(r), 'room:' + r.showroomId, { title: r.name, note: r.ctx }, r.name, !!r.hiddenAt) : roomTile(r);
+      if (!ed) return roomTile(r);
+      return mine(r) ? itemCard(thumb(r), 'room:' + r.showroomId, { title: r.name, note: r.ctx }, r.name, !!r.hiddenAt)
+        : lockCard(thumb(r), r.db ? 'Only its host can edit this showroom.' : 'This showroom is written into the page, so it can’t be edited here.');
     };
     var roomTile = function(r){
       var c = roomCard(r), aud = AUD[audienceOf(r)] || '';
@@ -721,6 +725,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     var editable = function(c){ return !!(c.o.studioId && c.o.canEdit); };
     var tile = function(c, ed){
       var o = c.o;
+      if (ed && !editable(c)) return lockCard('<div class="tile">' + mosaic(o.imgs.map(function(src){ return '<img src="' + src + '" alt="">'; })) + '</div>', o.studioId ? 'Only its owner or instructor can edit this studio.' : 'This studio is written into the page, so it can’t be edited here.');
       if (ed && editable(c)) return itemCard('<div class="tile">' + mosaic(o.imgs.map(function(src){ return '<img src="' + src + '" alt="">'; })) + '</div>', 'studio:' + o.studioId, { title: o.name, note: o.summary || '' }, o.name, o.archived);
       var inner = mosaic(o.imgs.map(function(src){ return '<img src="' + src + '" alt="">'; })) +
         '<span class="row"><span>' + esc(o.who) + '</span><span>' + esc(c.g.group === 'Your studio' ? '' : c.g.group) + '</span></span><span class="t">' + esc(o.name) + '</span>';
@@ -903,6 +908,8 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
   }
   function sessArgs(v){ return { p_name: v.title, p_from: v.from, p_to: v.to, p_open: v.open || null, p_lock: v.lock || null }; }
   var XWORD = { room: 'Hide', booth: 'Hide', studio: 'Put away' };
+  // in Edit, a card that cannot be changed says why instead of looking like the others
+  function lockCard(thumb, why){ return '<div class="pedit lock">' + thumb + '<p class="why">' + esc(why) + '</p></div>'; }
   function itemCard(thumb, what, v, name, hidden){
     if (hidden) return '<div class="pedit gone">' + thumb + '<button type="button" class="back" data-x="' + what + ':0">Show again</button></div>';
     var w = XWORD[what.split(':')[0]];

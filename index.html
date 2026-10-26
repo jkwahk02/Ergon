@@ -270,6 +270,8 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
 .nav-logo .role-badge::before{content:'· ';}
 /* phones: two rows, as in Telos and TaeSylla. Logo and avatar on top, tabs below in a row that scrolls sideways.
    After the title rules above so it wins over them. */
+/* menus sit on the right, next to the account, as in Arete */
+@media (min-width:761px){ header.top nav{margin-left:auto} .nav-right{margin-left:16px} }
 @media (max-width:760px){
   header.top .wrap{height:auto;flex-wrap:wrap;padding-top:8px}
   .nav-logo{font-size:20px;margin-right:auto;height:44px}

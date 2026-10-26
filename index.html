@@ -201,6 +201,24 @@ a.tile:hover .t{text-decoration:underline;text-underline-offset:3px}
 .greet{margin:0;padding-top:28px}
 .greet-h{font-size:clamp(28px,2.6vw,36px);font-weight:600;letter-spacing:-0.01em;line-height:1.2}
 .greet-s{margin-top:6px;font-size:18px;color:var(--muted)}
+.etile{position:relative}
+.etile.gone>:first-child{opacity:.4}
+.etile .back{position:absolute;top:8px;right:8px;min-height:34px;padding:0 12px;border:none;background:#111111;color:#FFFFFF;font-size:13px}
+.lbar{align-items:center}
+.lbar .lleft{margin-right:auto}
+.lbar .lroles{display:flex;flex-wrap:wrap;gap:6px}
+.hadd.edit{font-weight:500}
+.etile .ex{position:absolute;top:8px;right:8px;width:34px;height:34px;border:none;border-radius:50%;background:rgba(17,17,17,.78);color:#FFFFFF;font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center}
+.etile .ex:hover{background:#8A3A0A}
+.addtile.pt{flex-direction:column;gap:6px;aspect-ratio:16/9;align-self:start}
+.addtile.pt small{font-size:13px}
+.addcard{display:flex;flex-direction:column;gap:10px;padding:16px;box-shadow:inset 0 0 0 1px var(--line);align-self:start}
+.addcard label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+.addcard input{min-height:40px;padding:0 10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;font-size:15px}
+.addcard .am{margin:0;min-height:18px;font-size:13px;color:var(--warn)}
+.addcard .ab{display:flex;justify-content:flex-end;gap:8px}
+.addcard .ab button{min-height:40px;padding:0 16px;border:1px solid var(--line);background:var(--bg);font-size:14px}
+.addcard .ab .go{border:none;background:var(--accent);color:#FFFFFF;font-weight:500}
 .empty{padding:28px 0;color:var(--muted)}
 .gatebtn{min-height:46px;padding:0 20px;border:none;background:#FFFFFF;color:#111111;font-size:15px;font-weight:500}
 .hadd{min-height:36px;padding:0 4px;border:none;background:transparent;font-size:14px;color:var(--fg);text-decoration:underline;text-underline-offset:3px}
@@ -358,7 +376,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
   var OPEN = function(p){ if (p.url) return p.url; return p.type === 'slides' ? 'https://docs.google.com/presentation/d/' + p.id + '/present' : 'https://drive.google.com/file/d/' + p.id + '/view'; };
   var SOURCE = function(p){ if (p.url) return p.url; return p.type === 'slides' ? 'https://docs.google.com/presentation/d/' + p.id + '/view' : 'https://drive.google.com/file/d/' + p.id + '/view'; };
   var EMBED = function(p){
-    if (p.url) return p.provider === 'youtube' && p.id ? 'https://www.youtube.com/embed/' + p.id : p.provider === 'google_slides' && p.id ? 'https://docs.google.com/presentation/d/' + p.id + '/embed?start=false&loop=false' : p.provider === 'google_drive' && p.id ? 'https://drive.google.com/file/d/' + p.id + '/preview' : p.url;
+    if (p.url) return p.provider === 'youtube' && p.id ? 'https://www.youtube.com/embed/' + p.id : p.provider === 'google_slides' && p.id ? 'https://docs.google.com/presentation/d/' + p.id + '/embed?start=false&loop=false' : p.provider === 'google_drive' && p.id ? 'https://drive.google.com/file/d/' + p.id + '/preview' : p.provider === 'google_docs' && p.id ? 'https://docs.google.com/document/d/' + p.id + '/preview' : p.url;
     return p.type === 'slides' ? 'https://docs.google.com/presentation/d/' + p.id + '/embed?start=false&loop=false' : 'https://drive.google.com/file/d/' + p.id + '/preview'; };
 
   // ── DATA: showrooms and studios ──
@@ -420,7 +438,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
   var KIND = { slide_deck: 'slides', video: 'video' };
   function pieceOf(p){
     return { key: 'p' + p.piece_id, type: KIND[p.kind] || 'link', kind: p.kind, name: p.title, part: p.part || String(p.kind).replace('_', ' '),
-      src: String(p.provider).replace('_', ' '), img: p.thumbnail_url || '', id: p.file_id || '', url: p.url, provider: p.provider };
+      src: p.note || String(p.provider).replace('_', ' '), img: p.thumbnail_url || '', id: p.file_id || '', url: p.url, provider: p.provider };
   }
   function roomOf(w, names){
     var hosts = (w.ergon_showroom_hosts || []).map(function(h){ return h.email; }), amHost = hosts.indexOf(PROFESSOR.email) >= 0;
@@ -429,15 +447,15 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     var booths = (w.ergon_booths || []).filter(function(b){ return !b.hidden || amHost; })
       .sort(function(a, b){ return a.sort_order - b.sort_order; }).map(function(b){
         var ex = (b.ergon_booth_exhibitors || []).map(function(x){ return x.email; });
-        var ps = (b.ergon_booth_entries || []).filter(function(e){ return !e.withdrawn_at && e.ergon_pieces; }).map(function(e){ return pieceOf(e.ergon_pieces); });
-        return { key: 'b' + b.booth_id, boothId: b.booth_id, studioId: b.studio_id, label: b.label, name: b.title, prog: b.summary || '', exhibitorEmails: ex,
+        var ps = (b.ergon_booth_entries || []).filter(function(e){ return !e.withdrawn_at && e.ergon_pieces; }).map(function(e){ var x = pieceOf(e.ergon_pieces); x.entryId = e.entry_id; return x; });
+        return { key: 'b' + b.booth_id, boothId: b.booth_id, studioId: b.studio_id, hidden: !!b.hidden, label: b.label, name: b.title, prog: b.summary || '', exhibitorEmails: ex,
           people: [['Exhibitors', ex.length ? plural(ex.length, 'person') : 'Not assigned yet']], pieces: ps,
           when: b.from_on ? whenOf(b.from_on, b.to_on) : '', from: b.from_on ? d(b.from_on) : null, to: b.from_on ? dayAfter(b.to_on || b.from_on) : null };
       });
     var withWork = booths.filter(function(b){ return b.pieces.length; }).length;
-    return { key: 's' + w.showroom_id, showroomId: w.showroom_id, db: true, offeringId: w.offering_id, name: w.title, ctx: w.subtitle || '', tone: w.tone || '#2F2F2F',
+    return { key: 's' + w.showroom_id, showroomId: w.showroom_id, db: true, hiddenAt: w.hidden_at || null, offeringId: w.offering_id, name: w.title, ctx: w.subtitle || '', tone: w.tone || '#2F2F2F',
       host: hosts.map(function(e){ return names[e] || e.split('@')[0]; }).join(', '), hostEmails: hosts, audience: w.audience,
-      sessions: ss.length ? ss.map(function(s){ return { name: s.name, when: whenOf(s.stage_from, s.stage_to), open: d(s.opens_on || s.stage_from), from: d(s.stage_from), to: dayAfter(s.stage_to) }; })
+      sessions: ss.length ? ss.map(function(s){ return { id: s.session_id, name: s.name, when: whenOf(s.stage_from, s.stage_to), open: d(s.opens_on || s.stage_from), from: d(s.stage_from), to: dayAfter(s.stage_to) }; })
                           : [{ name: 'Showcase', when: 'Date to be set', open: d('2999-01-01'), from: d('2999-01-01'), to: d('2999-01-02') }],   // no session yet: Coming soon
       facts: Array.isArray(w.facts) ? w.facts : [],
       progress: { 'On stage': 'Appraisal open', 'Open': withWork + ' of ' + plural(booths.length, 'booth') + ' have work', 'Coming soon': 'Opens for work soon', 'Past': 'All sessions shown' },
@@ -446,10 +464,10 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
   function loadDB(){
     if (!signedIn()) return Promise.resolve();
     return Promise.all([
-      rest('ergon_showrooms?select=showroom_id,title,subtitle,tone,offering_id,audience,facts,ergon_showroom_hosts(email),' +
-        'ergon_sessions(name,sort_order,is_draft,opens_on,locks_on,stage_from,stage_to),' +
-        'ergon_booths(booth_id,label,title,summary,sort_order,hidden,from_on,to_on,studio_id,ergon_booth_exhibitors(email),ergon_booth_entries(withdrawn_at,ergon_pieces(piece_id,kind,title,part,url,provider,file_id,thumbnail_url)))&order=showroom_id'),
-      rest('ergon_studios?select=studio_id,title,offering_id,team_label,ergon_studio_members(email),ergon_pieces(kind,thumbnail_url)&archived_at=is.null&order=studio_id')
+      rest('ergon_showrooms?select=showroom_id,title,subtitle,tone,offering_id,audience,facts,hidden_at,ergon_showroom_hosts(email),' +
+        'ergon_sessions(session_id,name,sort_order,is_draft,opens_on,locks_on,stage_from,stage_to),' +
+        'ergon_booths(booth_id,label,title,summary,sort_order,hidden,from_on,to_on,studio_id,ergon_booth_exhibitors(email),ergon_booth_entries(entry_id,withdrawn_at,ergon_pieces(piece_id,kind,title,part,note,url,provider,file_id,thumbnail_url)))&order=showroom_id'),
+      rest('ergon_studios?select=studio_id,title,summary,offering_id,team_label,created_by,archived_at,ergon_studio_members(email),ergon_pieces(kind,thumbnail_url)&order=studio_id')
     ]).then(function(res){
       var rooms = res[0], studios = res[1], hostEmails = [];
       rooms.forEach(function(w){ (w.ergon_showroom_hosts || []).forEach(function(h){ if (hostEmails.indexOf(h.email) < 0) hostEmails.push(h.email); }); });
@@ -466,10 +484,12 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
           // the showroom this studio exhibits in: its course showroom, else the one whose booth it feeds
           var room = dbRooms.filter(function(r){ return r.offeringId && r.offeringId === s.offering_id; })[0]
                   || dbRooms.filter(function(r){ return r.booths.some(function(b){ return b.studioId === s.studio_id; }); })[0];
-          var gk = mine ? 'mine' : room ? room.key : 'other';
-          if (!groups[gk]) { groups[gk] = { group: gk === 'mine' ? 'Your teams' : room ? (room.ctx || room.name) : 'Other studios', meta: '', teamsOf: room && room.offeringId && gk !== 'mine' ? room.key : null, items: [] }; order.push(gk); }
+          var own = s.created_by === me && !s.offering_id && !room;
+          var gk = own ? 'own' : mine ? 'mine' : room ? room.key : 'other';
+          if (!groups[gk]) { groups[gk] = { group: gk === 'own' ? 'Your studio' : gk === 'mine' ? 'Your teams' : room ? (room.ctx || room.name) : 'Other studios', meta: '', owner: own ? PROFESSOR.id : null, teamsOf: room && room.offeringId && gk !== 'mine' ? room.key : null, items: [] }; order.push(gk); }
           var n = (s.ergon_studio_members || []).length;
-          groups[gk].items.push({ who: s.team_label || 'Studio', name: s.title, note: n ? plural(n, 'member') : 'No members yet',
+          groups[gk].items.push({ who: s.team_label || 'Studio', name: s.title, note: own ? (s.summary || 'Your own studio') : n ? plural(n, 'member') : 'No members yet',
+            studioId: s.studio_id, archived: !!s.archived_at, canEdit: s.created_by === me || !!(room && roleIn(room) === 'host'),
             imgs: (s.ergon_pieces || []).map(function(p){ return p.thumbnail_url; }).filter(Boolean) });
         });
         order.forEach(function(k){ groups[k].meta = plural(groups[k].items.length, 'studio'); });
@@ -522,7 +542,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     return true;
   }
   var audLine = function(r, a){ return a === 'public' ? 'Open to anyone with the link' : a === 'class' ? 'For the ' + (r.course || 'class') + ' class · sign in with a Taejae account' : 'For Taejae members · sign in with a Taejae account'; };
-  var allPieces = function(room){ var out = []; room.booths.forEach(function(b){ b.pieces.forEach(function(p){ out.push({ p: p, b: b }); }); }); return out; };
+  var allPieces = function(room){ var out = []; room.booths.forEach(function(b){ if (b.hidden) return; b.pieces.forEach(function(p){ out.push({ p: p, b: b }); }); }); return out; };
   function find(kind, key){
     for (var i = 0; i < ROOMS.length; i++) {
       var r = ROOMS[i]; if (kind === 's' && r.key === key) return { room: r };
@@ -556,7 +576,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
   // ── HOME ──
   var deckIdx = 0, rot = 0, current = null;
   function roomCard(r){ var s = lead(r), st = stateOf(s); return { r: r, st: st, status: statusOf(r), when: lineOf(r), meta: r.progress[st] || '' }; }
-  function liveRooms(){ return ROOMS.map(roomCard).filter(function(c){ return c.st !== 'Past'; }).sort(function(a, b){ return ORDER[a.st] - ORDER[b.st]; }); }
+  function liveRooms(){ return ROOMS.filter(function(r){ return !r.hiddenAt; }).map(roomCard).filter(function(c){ return c.st !== 'Past'; }).sort(function(a, b){ return ORDER[a.st] - ORDER[b.st]; }); }
   function cardStage(c){
     var r = c.r, pcs = allPieces(r), pc = pcs.length ? pcs[rot % pcs.length] : null;
     return '<a class="shot" href="' + (pc ? '#p/' + pc.p.key : '#s/' + r.key) + '">' + (pc ? visual(pc.p) + (pc.p.type === 'video' ? playIcon : '') : '<span class="ph"><small>' + esc(c.st) + '</small><b>Work appears here once booths fill</b></span>') + '</a>' +
@@ -582,7 +602,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     if (n > 1) h += '<button type="button" class="peek l" data-step="-1"></button><button type="button" class="peek r" data-step="1"></button>';
     h += '</section><div class="dots" role="group" aria-label="Choose a showroom">' + live.map(function(c, k){ return '<button type="button" data-deck="' + k + '" aria-label="Show ' + esc(c.r.name) + '"><span><i></i></span></button>'; }).join('') + '</div>';
     h += '<div class="gut"><div class="wrap"><section class="sec" aria-labelledby="rooms-h"><div class="sec-h"><h2 id="rooms-h">Showrooms</h2><button type="button" class="hadd" data-new="showroom">+ Open a showroom</button></div><div class="tiles wide">';
-    h += ROOMS.map(function(r){ var c = roomCard(r); return '<a class="rtile" href="#s/' + r.key + '" style="background:' + r.tone + '"><span class="state" style="color:rgba(255,255,255,.85)"><span class="chip" style="background:' + statusBg[c.status] + '">' + c.status + '</span><span>' + esc(c.when) + '</span></span><span class="rs">' + esc(r.ctx) + '</span><span class="rn">' + esc(r.name) + '</span><span class="rm">' + esc(c.meta) + '</span></a>'; }).join('');
+    h += ROOMS.filter(function(r){ return !r.hiddenAt; }).map(function(r){ var c = roomCard(r); return '<a class="rtile" href="#s/' + r.key + '" style="background:' + r.tone + '"><span class="state" style="color:rgba(255,255,255,.85)"><span class="chip" style="background:' + statusBg[c.status] + '">' + c.status + '</span><span>' + esc(c.when) + '</span></span><span class="rs">' + esc(r.ctx) + '</span><span class="rn">' + esc(r.name) + '</span><span class="rm">' + esc(c.meta) + '</span></a>'; }).join('');
     h += '</div></section>';
     h += '<section class="sec" aria-labelledby="studios-h" id="studios-sec"><div class="sec-h"><h2 id="studios-h">Studios</h2><button type="button" class="hadd" data-new="studio">+ Open a studio</button></div>';
     var me = PROFESSOR && PROFESSOR.id;
@@ -590,7 +610,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
       STUDIOS.some(function(g){ return g.owner && g.owner === me; }) ? [] : [{ group: 'Your studio', meta: 'Your own lectures and projects · private until you send them to a showroom', items: [{ who: PROFESSOR ? PROFESSOR.name : '', name: 'Nothing here yet', note: 'Add a lecture, a project or your team’s work', imgs: [] }] }]
     ).forEach(function(g){
       h += '<div class="group"><b>' + esc(g.group) + '</b><span class="lbl">' + esc(g.meta) + (g.teamsOf && find('s', g.teamsOf) && roleIn(find('s', g.teamsOf).room) === 'host' ? ' · <button type="button" class="hadd" data-teams="' + g.teamsOf + '">Edit teams</button>' : '') + '</span></div><div class="tiles">';
-      h += g.items.map(function(o){
+      h += g.items.filter(function(o){ return !o.archived; }).map(function(o){
         var inner = mosaic(o.imgs.map(function(src){ return '<img src="' + src + '" alt="">'; })) +
           '<span class="row"><span>' + esc(o.who) + '</span><span></span></span><span class="t">' + esc(o.name) + '</span><span class="s">' + esc(o.note) + '</span>';
         return o.href ? '<a class="tile" href="' + o.href + '">' + inner + '</a>' : '<div class="tile">' + inner + '</div>';
@@ -602,11 +622,11 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
   // ── SHOWROOMS AND STUDIOS PAGES ──
   // The same layout on both: the orange page band, a role filter, groups with a count, 16:9 cards with one line under each
   var listRole = { showrooms: 'All', studios: 'All' };
-  function filterBar(page, roles){
-    return '<div class="lbar" role="group" aria-label="Show ' + page + ' by your role">' + roles.map(function(l){
+  function filterBar(page, roles, left){
+    return '<div class="lbar">' + (left ? '<span class="lleft">' + left + '</span>' : '') + '<span class="lroles" role="group" aria-label="Show ' + page + ' by your role">' + roles.map(function(l){
       var on = listRole[page] === l;
       return '<button type="button" class="lrole' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-lrole="' + page + ':' + l + '">' + l + '</button>';
-    }).join('') + '</div>';
+    }).join('') + '</span></div>';
   }
   function listGroup(id, title, count, body){
     return '<section class="sec" aria-labelledby="' + id + '"><div class="sec-h"><h2 id="' + id + '">' + title + '</h2><span class="lbl">' + count + '</span></div><div class="tiles wide">' + body + '</div></section>';
@@ -614,8 +634,13 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
   function showroomsHTML(){
     var ROLE = { Hosting: 'host', Exhibiting: 'exhibitor', Invited: 'visitor' }, pick = listRole.showrooms;
     var ROLEWORD = { host: 'Host', exhibitor: 'Exhibitor', visitor: 'Invited' };
-    var rooms = ROOMS.filter(function(r){ return canView(r) && (pick === 'All' || roleIn(r) === ROLE[pick]); });
+    var ed = editing.scope === 'showrooms';
+    var rooms = ROOMS.filter(function(r){ return canView(r) && (!r.hiddenAt || ed) && (pick === 'All' || roleIn(r) === ROLE[pick]); });
     var tile = function(r){
+      var t = roomTile(r);
+      return ed && r.db && roleIn(r) === 'host' ? xTile(t, 'room:' + r.showroomId, 'Hide ' + r.name, !!r.hiddenAt) : t;
+    };
+    var roomTile = function(r){
       var c = roomCard(r), aud = AUD[audienceOf(r)] || '';
       return '<div><a class="rtile" href="#s/' + r.key + '" style="background:' + r.tone + '"><span class="state" style="color:rgba(255,255,255,.85)"><span class="chip" style="background:' + statusBg[c.status] + '">' + c.status + '</span><span>' + esc(c.when) + '</span></span>' +
         '<span class="rs">' + esc(r.ctx) + '</span><span class="rn">' + esc(r.name) + '</span><span class="rm">' + esc(c.meta) + '</span></a>' +
@@ -624,41 +649,42 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     var host = pick === 'All' || pick === 'Hosting', h = '';
     ['Live', 'Prep', 'Past'].forEach(function(k){
       var list = rooms.filter(function(r){ return statusOf(r) === k; });
-      var add = k === 'Prep' && host ? '<div><button type="button" class="addtile" data-new="showroom"><span aria-hidden="true">+</span></button><div class="under"><b>Open a showroom</b><span>For an assessment, a lecture series or an event</span></div></div>' : '';
+      var add = k !== 'Prep' || !host ? '' : ed ? plusTile('showroom') : '<div><button type="button" class="addtile" data-edit-open="showrooms"><span aria-hidden="true">+</span></button><div class="under"><b>Open a showroom</b><span>For an assessment, a lecture series or an event</span></div></div>';
       if (list.length || add) h += listGroup('rooms-' + k, k, plural(list.length, 'showroom'), list.map(tile).join('') + add);
     });
     return pageHead('Showrooms', 'Showrooms you host, exhibit in or are invited to.') +
-      '<div class="gut"><div class="wrap">' + filterBar('showrooms', ['All', 'Hosting', 'Exhibiting', 'Invited']) + (h || '<p class="empty">No showrooms here yet.</p>') + '</div></div>' + foot();
+      '<div class="gut"><div class="wrap">' + filterBar('showrooms', ['All', 'Hosting', 'Exhibiting', 'Invited'], ROOMS.some(function(r){ return r.db && roleIn(r) === 'host'; }) ? editBtn('showrooms') : '') + (h || '<p class="empty">No showrooms here yet.</p>') + '</div></div>' + foot();
   }
-  // Studios have no state: they group by term. The current term is the latest "Fall/Spring YYYY" named on a showroom or studio.
+  // Studios have no state: they group by term. A studio named for an earlier "Fall/Spring YYYY" than today's term is Earlier.
   function termOf(label){ var m = /(Spring|Fall)\s+(\d{4})/.exec(label || ''); return m ? +m[2] * 2 + (m[1] === 'Fall' ? 1 : 0) : null; }
   function studiosHTML(){
     var me = PROFESSOR && PROFESSOR.id, pick = listRole.studios;
     var groups = STUDIOS.filter(function(g){ return g.owner ? g.owner === me : g.hostOf ? roleIn(find('s', g.hostOf).room) === 'host' : true; });
     var roleOf = function(g){ return g.owner ? 'Own' : g.group === 'Your teams' ? 'Member' : 'Teaching'; };
     var WORD = { Own: 'Owner', Member: 'Member', Teaching: 'Teaching' };
-    var cur = Math.max.apply(null, ROOMS.map(function(r){ return termOf(r.ctx) || 0; }).concat(STUDIOS.map(function(g){ return termOf(g.group) || 0; })));
+    var td = new Date(), cur = td.getFullYear() * 2 + (td.getMonth() >= 7 ? 1 : 0);   // this term from today: Aug–Dec Fall, Jan–Jul Spring
     var cards = [];
     groups.forEach(function(g){
       var role = roleOf(g), t = termOf(g.group), term = t && t < cur ? 'Earlier' : 'This term';
       if (pick !== 'All' && role !== pick) return;
-      g.items.forEach(function(o){ cards.push({ g: g, o: o, role: role, term: term }); });
+      g.items.forEach(function(o){ if (!o.archived || editing.scope === 'studios') cards.push({ g: g, o: o, role: role, term: term }); });
     });
     var tile = function(c){
       var o = c.o, inner = mosaic(o.imgs.map(function(src){ return '<img src="' + src + '" alt="">'; })) +
         '<span class="row"><span>' + esc(o.who) + '</span><span>' + esc(c.g.group === 'Your studio' ? '' : c.g.group) + '</span></span><span class="t">' + esc(o.name) + '</span>';
       var box = o.href ? '<a class="tile" href="' + o.href + '">' + inner + '</a>' : '<div class="tile">' + inner + '</div>';
-      return '<div>' + box + '<div class="under"><b>' + WORD[c.role] + '</b><span>' + esc(o.note) + '</span>' +
+      var card = '<div>' + box + '<div class="under"><b>' + WORD[c.role] + '</b><span>' + esc(o.note) + '</span>' +
         (c.g.teamsOf && find('s', c.g.teamsOf) && roleIn(find('s', c.g.teamsOf).room) === 'host' && c.o === c.g.items[0] ? '<button type="button" class="hadd" data-teams="' + c.g.teamsOf + '">Edit teams</button>' : '') + '</div></div>';
+      return editing.scope === 'studios' && o.studioId && o.canEdit ? xTile(card, 'studio:' + o.studioId, 'Put away ' + o.name, o.archived) : card;
     };
     var own = pick === 'All' || pick === 'Own', h = '';
     ['This term', 'Earlier'].forEach(function(k, i){
       var list = cards.filter(function(c){ return c.term === k; });
-      var add = k === 'This term' && own ? '<div><button type="button" class="addtile" data-new="studio"><span aria-hidden="true">+</span></button><div class="under"><b>Open a studio</b><span>For a lecture series, a talk or a project of your own</span></div></div>' : '';
+      var add = k !== 'This term' || !own ? '' : editing.scope === 'studios' ? plusTile('studio') : '<div><button type="button" class="addtile" data-edit-open="studios"><span aria-hidden="true">+</span></button><div class="under"><b>Open a studio</b><span>For a lecture series, a talk or a project of your own</span></div></div>';
       if (list.length || add) h += listGroup('studios-' + i, k, plural(list.length, 'studio'), list.map(tile).join('') + add);
     });
     return pageHead('Studios', 'Where work is made before it goes to a showroom.') +
-      '<div class="gut"><div class="wrap">' + filterBar('studios', ['All', 'Own', 'Member', 'Teaching']) + (h || '<p class="empty">No studios here yet.</p>') + '</div></div>' + foot();
+      '<div class="gut"><div class="wrap">' + filterBar('studios', ['All', 'Own', 'Member', 'Teaching'], editBtn('studios')) + (h || '<p class="empty">No studios here yet.</p>') + '</div></div>' + foot();
   }
   document.addEventListener('click', function(e){
     var t = e.target.closest && e.target.closest('[data-lrole]'); if (!t) return;
@@ -733,7 +759,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
       '</div><div class="stage" id="stage">' + stageHTML(cfg) + '</div></div>';
     if (cfg.sessions && cfg.sessions.length > 1) h += '<div class="sess" role="group" aria-label="Sessions">' + cfg.sessions.map(function(s){ var st = stateOf(s); return '<div class="' + (s === cfg.lead ? 'on' : '') + '">' + esc(s.name) + '<small>' + esc(s.when) + (st === 'On stage' ? ' · on stage' : st === 'Past' ? ' · past' : '') + '</small></div>'; }).join('') + '</div>';
     h += '</div></section><div class="gut"><div class="wrap">';
-    h += '<section class="sec" aria-labelledby="t-h"><div class="sec-h"><h2 id="t-h">' + esc(cfg.tilesTitle) + '</h2></div>' + (cfg.tiles.length ? '<div class="tiles">' + cfg.tiles.join('') + '</div>' : '<div class="empty">' + esc(cfg.noTiles) + (cfg.emptyAct || '') + '</div>') + '</section>';
+    h += '<section class="sec" aria-labelledby="t-h"><div class="sec-h"><h2 id="t-h">' + esc(cfg.tilesTitle) + '</h2>' + (cfg.tilesAct || '') + '</div>' + (cfg.tiles.length ? '<div class="tiles">' + cfg.tiles.join('') + '</div>' : '<div class="empty">' + esc(cfg.noTiles) + (cfg.emptyAct || '') + '</div>') + '</section>';
     h += '<section class="sec" aria-labelledby="f-h"><div class="sec-h"><h2 id="f-h">' + esc(cfg.factsTitle) + '</h2></div><dl class="facts">' + cfg.facts.map(function(x){ return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd>'; }).join('') + '</dl></section>';
     return h + '</div></div>' + foot();
   }
@@ -748,23 +774,102 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
       stage: allPieces(r).map(function(x){ return { p: x.p, sub: x.b.label + ' · ' + x.p.part }; }), empty: r.booths.length ? 'Nothing sent yet' : 'Booths appear here as teams send work',
       tilesTitle: 'Booths', noTiles: roleIn(r) === 'host' && r.offeringId ? 'No booths yet. Put the class into teams; each team gets a booth and a studio. ' : 'Booths appear here as teams send work',
       emptyAct: roleIn(r) === 'host' && r.offeringId ? '<button type="button" class="hadd" data-teams="' + r.key + '">Set up teams</button>' : '', facts: r.facts, factsTitle: 'About this showroom',
-      tiles: r.booths.map(function(b){
+      tilesAct: r.db && roleIn(r) === 'host' ? editBtn('s:' + r.key) : '',
+      tiles: r.booths.filter(function(b){ return !b.hidden || editing.scope === 's:' + r.key; }).map(function(b){
         var n = b.pieces.length, bs = b.from ? boothState(r, b) : null;
         return '<a class="tile" href="#b/' + b.key + '">' + mosaic(b.pieces.map(visual)) +
           '<span class="row"><span>' + esc(b.label) + (b.when ? ' · ' + esc(b.when) : '') + '</span><span>' + plural(n, 'piece') + '</span></span><span class="t">' + esc(b.name) + '</span>' +
           '<span class="s">' + (bs === 'On stage' ? 'On stage now' : bs === 'Past' ? 'Shown ' + esc(b.when) : bs ? 'Starts ' + esc(String(b.when).split('–')[0]) : n ? '' : 'Nothing sent yet') + '</span></a>';
-      }) };
+      }).map(function(t, k, all){ return t; }) };
+  }
+  // the showroom page in Edit: an x on each booth and a + card at the end
+  function editShowroomTiles(r, cfg){
+    if (editing.scope !== 's:' + r.key) return cfg;
+    var shown = r.booths.filter(function(b){ return true; });
+    cfg.tiles = cfg.tiles.map(function(t, k){ var b = shown[k]; return xTile(t, 'booth:' + b.boothId, 'Hide ' + b.label + ' · ' + b.name, b.hidden); }).concat([plusTile('booth', r.key)]);
+    cfg.emptyAct = ''; return cfg;
   }
   function boothCfg(r, b, j){
     var n = r.booths.length, prev = r.booths[(j - 1 + n) % n], next = r.booths[(j + 1) % n], s = lead(r);
-    return { tone: r.tone, path: rootPath(r).concat([[b.label + ' · ' + b.name, null]]),
+    var cfg = { tone: r.tone, path: rootPath(r).concat([[b.label + ' · ' + b.name, null]]),
       sib: n > 1 ? { prev: ['#b/' + prev.key, prev.label], next: ['#b/' + next.key, next.label], pos: (j + 1) + ' / ' + n } : null,
       state: boothState(r, b), when: b.when || (r.sessions.length > 1 ? s.name + ' · ' + s.when : s.when), ctx: b.label, name: b.name, prog: b.prog,
       dl: b.people.concat([['Pieces', plural(b.pieces.length, 'piece')]]),
       stage: b.pieces.map(function(p){ return { p: p, sub: p.part }; }), empty: 'Nothing sent yet',
       tilesTitle: 'Pieces', noTiles: 'Nothing sent yet', tiles: b.pieces.map(pieceTile),
       factsTitle: 'About this booth', facts: [['Showroom', r.name]].concat(b.when ? [['When', b.when]] : []) };
+    if (canEditBooth(r, b)) {
+      cfg.tilesAct = editBtn('b:' + b.key);
+      if (editing.scope === 'b:' + b.key) cfg.tiles = b.pieces.map(function(p){ return xTile(pieceTile(p), 'entry:' + p.entryId, 'Remove ' + p.name + ' from this booth', false); }).concat([plusTile('piece', b.key)]);
+    }
+    return cfg;
   }
+  // ── EDITING (hosts and owners, for now) ──
+  // Edit beside a list turns on an x on each card and a + card at the end. The x takes a piece out of a booth,
+  // or hides a booth, a showroom or a studio (Show again brings it back). The + adds one with a title and a note.
+  var editing = { scope: null, adding: false };
+  function canEditBooth(r, b){ return r.db && !!b.studioId && signedIn() && roleIn(r) === 'host'; }
+  function editBtn(scope){ var on = editing.scope === scope; return '<button type="button" class="hadd edit" data-edit="' + scope + '" aria-pressed="' + on + '">' + (on ? 'Done' : 'Edit') + '</button>'; }
+  function xTile(inner, what, label, hidden){
+    return '<div class="etile' + (hidden ? ' gone' : '') + '">' + inner + (hidden
+      ? '<button type="button" class="back" data-x="' + what + ':0">Show again</button>'
+      : '<button type="button" class="ex" data-x="' + what + ':1" aria-label="' + esc(label) + '">×</button>') + '</div>';
+  }
+  var ADDTEXT = { piece: 'Add a piece by link', booth: 'Add a booth', showroom: 'Open a showroom', studio: 'Open a studio' };
+  function plusTile(kind, target){
+    if (!editing.adding) return '<button type="button" class="addtile pt" data-add-open="1"><span aria-hidden="true">+</span><small>' + ADDTEXT[kind] + '</small></button>';
+    return '<form class="addcard" data-add-kind="' + kind + '" data-target="' + (target || '') + '" novalidate>' +
+      '<label>Title<input name="title" type="text" required placeholder="' + (kind === 'piece' ? 'What is it?' : 'Its name') + '"></label>' +
+      (kind === 'piece' ? '<label>Link<input name="url" type="url" required placeholder="https://"></label>' : '') +
+      '<label>Short note<input name="note" type="text" placeholder="Optional, shown under the title"></label>' +
+      '<p class="am" role="status" aria-live="polite"></p>' +
+      '<span class="ab"><button type="button" data-add-cancel="1">Cancel</button><button type="submit" class="go">Save</button></span></form>';
+  }
+  function rerender(){ var y = window.scrollY; render(); window.scrollTo(0, y); var f = app.querySelector('.addcard'); if (f) f.title.focus(); }
+  function afterEdit(msg){ return function(){ toast(msg); editing.adding = false; return loadDB(); }; }
+  document.addEventListener('click', function(e){
+    var t = e.target.closest ? e.target.closest('[data-edit],[data-x],[data-add-open],[data-add-cancel],[data-edit-open]') : null; if (!t) return;
+    if (t.hasAttribute('data-edit')) { var k = t.getAttribute('data-edit'); editing.scope = editing.scope === k ? null : k; editing.adding = false; rerender(); return; }
+    if (t.hasAttribute('data-edit-open')) { editing.scope = t.getAttribute('data-edit-open'); editing.adding = true; rerender(); return; }
+    if (t.hasAttribute('data-add-open')) { editing.adding = true; rerender(); return; }
+    if (t.hasAttribute('data-add-cancel')) { editing.adding = false; rerender(); return; }
+    var v = t.getAttribute('data-x').split(':'), id = +v[1], hide = v[2] === '1', call;
+    if (v[0] === 'entry') call = rpc('ergon_remove_entry', { p_entry_id: id });
+    else if (v[0] === 'booth') call = rpc('ergon_set_booth_hidden', { p_booth_id: id, p_hidden: hide });
+    else if (v[0] === 'room') call = rpc('ergon_set_showroom_hidden', { p_showroom_id: id, p_hidden: hide });
+    else call = rpc('ergon_set_studio_archived', { p_studio_id: id, p_archived: hide });
+    t.disabled = true;
+    call.then(afterEdit(v[0] === 'entry' ? 'Removed from this booth' : hide ? 'Hidden' : 'Shown again')).then(rerender)
+      .catch(function(ex){ toast(ex.message); t.disabled = false; });
+  });
+  document.addEventListener('submit', function(e){
+    var f = e.target; if (!f.classList || !f.classList.contains('addcard')) return;
+    e.preventDefault();
+    var kind = f.getAttribute('data-add-kind'), target = f.getAttribute('data-target');
+    var msg = f.querySelector('.am'), btn = f.querySelector('.go'), title = f.title.value.trim(), note = f.note.value.trim() || null, call;
+    if (!title) { msg.textContent = 'Give it a title.'; f.title.focus(); return; }
+    if (kind === 'piece') {
+      var url = f.url.value.trim();
+      if (!/^https?:\/\//i.test(url)) { msg.textContent = 'Paste a link that starts with https://'; f.url.focus(); return; }
+      var fb = find('b', target), info = linkInfo(url), ses = fb.booth.from ? null : lead(fb.room);
+      call = rpc('ergon_add_link', { p_booth_id: fb.booth.boothId, p_session_id: ses && ses.id ? ses.id : null, p_url: url, p_title: title, p_note: note, p_kind: info.kind, p_provider: info.provider, p_file_id: info.id || null });
+    }
+    else if (kind === 'booth') call = rpc('ergon_host_add_booth', { p_showroom_id: find('s', target).room.showroomId, p_title: title, p_note: note });
+    else if (kind === 'showroom') call = rpc('ergon_host_open_showroom', { p_title: title, p_note: note });
+    else call = rpc('ergon_open_studio', { p_title: title, p_note: note });
+    btn.disabled = true; btn.textContent = 'Saving…'; msg.textContent = '';
+    call.then(afterEdit('Saved')).then(rerender).catch(function(ex){ msg.textContent = ex.message; btn.disabled = false; btn.textContent = 'Save'; });
+  });
+  function linkInfo(url){
+    var u = String(url || '').trim(), m;
+    if ((m = /docs\.google\.com\/presentation\/d\/([\w-]+)/.exec(u))) return { provider: 'google_slides', id: m[1], kind: 'slide_deck' };
+    if ((m = /docs\.google\.com\/document\/d\/([\w-]+)/.exec(u))) return { provider: 'google_docs', id: m[1], kind: 'report' };
+    if ((m = /drive\.google\.com\/(?:file\/d\/|open\?id=)([\w-]+)/.exec(u))) return { provider: 'google_drive', id: m[1], kind: 'other' };
+    if ((m = /(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{11})/.exec(u))) return { provider: 'youtube', id: m[1], kind: 'video' };
+    if ((m = /github\.com\/([\w.-]+\/[\w.-]+)/.exec(u))) return { provider: 'github', id: m[1].replace(/\.git$/, ''), kind: 'code' };
+    return { provider: 'web', id: '', kind: 'other' };
+  }
+
   function leafHTML(r, b, p, k){
     var n = b.pieces.length, path = rootPath(r);
     if (n > 1) path.push([b.label + ' · ' + b.name, '#b/' + b.key]);
@@ -786,6 +891,8 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
   function render(){
     var hash = location.hash.slice(1), parts = hash.split('/'), kind = parts[0], key = parts[1], f = key ? find(kind, key) : null;
     current = null; rot = 0; clearTimeout(autoTimer); clearHover(); hovering = false;
+    var scopeNow = kind === 'b' ? 'b:' + key : kind === 's' ? 's:' + key : kind === 'showrooms' || kind === 'studios' ? kind : '';
+    if (editing.scope !== scopeNow) { editing.scope = null; editing.adding = false; }
     if (f && kind === 's' && AUD[parts[2]]) { try { sessionStorage.setItem('ergon_aud_' + f.room.key, parts[2]); } catch (e) {} }
     if (f) { try { sessionStorage.setItem('ergon_last_room', f.room.key); } catch (e) {} }
     if (f && !canView(f.room)) {
@@ -796,10 +903,10 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     showWall(false);
     if (f && kind === 'p') { header('showrooms', f.room); app.innerHTML = leafHTML(f.room, f.booth, f.piece, f.k); document.title = f.piece.name + ' · ' + appName(); }
     else if (f && kind === 'b') {
-      if (f.booth.pieces.length === 1) { location.replace('#p/' + f.booth.pieces[0].key); return; }   // a single-piece booth opens on its piece
+      if (f.booth.pieces.length === 1 && !canEditBooth(f.room, f.booth)) { location.replace('#p/' + f.booth.pieces[0].key); return; }   // a single-piece booth opens on its piece, except for a host who may edit it
       header('showrooms', f.room); current = boothCfg(f.room, f.booth, f.j); app.innerHTML = page(current); document.title = f.booth.name + ' · ' + appName();
     }
-    else if (f && kind === 's') { header('showrooms', f.room); current = showroomCfg(f.room); app.innerHTML = page(current); document.title = f.room.name + ' · ' + appName(); }
+    else if (f && kind === 's') { header('showrooms', f.room); current = editShowroomTiles(f.room, showroomCfg(f.room)); app.innerHTML = page(current); document.title = f.room.name + ' · ' + appName(); }
     else if (kind === 'about') { header('about'); app.innerHTML = aboutHTML(); document.title = 'About · ' + appName(); }
     else if (kind === 'settings') { header('settings'); app.innerHTML = settingsHTML(); document.title = 'Settings · ' + appName(); }
     else {

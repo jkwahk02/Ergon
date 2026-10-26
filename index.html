@@ -403,51 +403,9 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     if (p.url) return p.provider === 'youtube' && p.id ? 'https://www.youtube.com/embed/' + p.id : p.provider === 'google_slides' && p.id ? 'https://docs.google.com/presentation/d/' + p.id + '/embed?start=false&loop=false' : p.provider === 'google_drive' && p.id ? 'https://drive.google.com/file/d/' + p.id + '/preview' : p.provider === 'google_docs' && p.id ? 'https://docs.google.com/document/d/' + p.id + '/preview' : p.url;
     return p.type === 'slides' ? 'https://docs.google.com/presentation/d/' + p.id + '/embed?start=false&loop=false' : 'https://drive.google.com/file/d/' + p.id + '/preview'; };
 
-  // ── DATA: showrooms and studios ──
-  var DA321_TEAMS = ['Vietnam’s Climate-Tech Ecosystem', 'Korea in East Asian Ceramics', 'Spatial Audio from Natural Language', 'Accessible Bladder Data Visualization', 'Income Distribution and Household Consumption in China', 'Global Brands’ Marketing Across Markets', 'K-pop Comeback Success', 'Seoul Scout', 'The Searcher’s Workbench'];
-  var ROOMS = [
-    { key: 'brain', name: '뇌과학 아카데미 특강', ctx: 'Data Science & AI · for high-school students', tone: '#16233F', host: '곽지영 교수', hosts: ['b3154590ea5dc4b3f5ba57afc42ab6c092a10711fcf3c201ba0989d2c2d9e64d'], exhibitors: [], audience: 'public',
-      sessions: [{ name: '특강 기간', when: 'Oct 26 – Nov 6, 2026', open: d('2026-10-19'), from: d('2026-10-26'), to: d('2026-11-07') }],
-      facts: [['What', '고교생 대상 뇌과학 아카데미의 Data Science & AI 특강. 뇌를 모방한 신경망에서 언어 모델까지, 두 주 동안 여섯 차시.'], ['Booths', 'One per week · lecture videos and slides'], ['Audience', 'Anyone with the link, no sign-in needed (unless an invitation says otherwise)'], ['Pieces play in', 'Google Drive for videos · Google Slides for decks']],
-      progress: { 'On stage': 'Lessons open · participants and parents invited', 'Open': 'Lessons ready · opens Oct 26', 'Coming soon': 'Opens Oct 26', 'Past': 'Recordings and slides stay open' },
-      booths: [
-        { key: 'brain-w1', label: 'Week 1', name: 'AI는 어떻게 학습하는가', when: 'Oct 26–30', from: d('2026-10-26'), to: d('2026-10-31'), people: [['Lecturer', '곽지영 교수']],
-          prog: '뇌를 모방한 신경망. 규칙에서 인공신경망으로, 학습의 원리, 그리고 AI가 세상을 보는 방법까지 세 차시로 다룹니다.',
-          pieces: [
-            { key: 'w1v1', type: 'video', name: 'AI 학습: 규칙에서 인공신경망으로', part: 'Lesson 1 · video', src: 'MP4 in Google Drive · 47 MB', img: 'img/w1-l1.png', id: '1FMwLRbq5MmnOD9iOpAx6ccx7n-XIoLtt' },
-            { key: 'w1v2', type: 'video', name: 'AI는 어떻게 학습하는가', part: 'Lesson 2 · video', src: 'MP4 in Google Drive · 33 MB', img: 'img/w1-l2.png', id: '1YeRh2HVez5ZDfha1duyZOh_XKLGfR2KP' },
-            { key: 'w1v3', type: 'video', name: 'AI는 어떻게 세상을 볼까?', part: 'Lesson 3 · video', src: 'MP4 in Google Drive · 40 MB', img: 'img/w1-l3.png', id: '1FJAo3n1syx0U1lYYvpuuP7Ve1lkSJlWs' },
-            { key: 'w1s', type: 'slides', name: 'AI는 어떻게 학습하는가', part: 'Slides · all three lessons', src: 'Google Slides', img: 'img/w1-slides.png', id: '1cdtuXB1-qEXQEPwnKROorhPRt_zyWM0ZgOgPkb3StVQ' }
-          ] },
-        { key: 'brain-w2', label: 'Week 2', name: 'AI는 어떻게 대화하는가', when: 'Nov 2–6', from: d('2026-11-02'), to: d('2026-11-07'), people: [['Lecturer', '곽지영 교수']],
-          prog: '언어 모델의 원리. 뇌가 기억을 만드는 방식에서 출발해, AI가 말을 이해하고 이어 가는 방법을 세 차시로 다룹니다.',
-          pieces: [
-            { key: 'w2s', type: 'slides', name: 'AI는 어떻게 대화하는가', part: 'Slides · all three lessons', src: 'Google Slides', img: 'img/w2-slides.png', id: '1UvkCOd2Mv8MSArCVtBUtIsDVLj1XdqIbA8EtVxIbGJg' }
-          ] }
-      ] },
-    { key: 'da321', dbOffering: 54, name: 'Project Demo and Presentation', ctx: 'DA321 Data Analytics and Visualization · Fall 2026', tone: '#123B37', host: '곽지영 교수', hosts: ['b3154590ea5dc4b3f5ba57afc42ab6c092a10711fcf3c201ba0989d2c2d9e64d'], exhibitors: [], audience: 'class', course: 'DA321', roster: [],
-      sessions: [
-        { name: 'EDA workshop', when: 'Oct 5 & 7', open: d('2026-09-28'), from: d('2026-10-05'), to: d('2026-10-08') },
-        { name: 'Data-analytics case study', when: 'Nov 2', open: d('2026-10-12'), from: d('2026-11-02'), to: d('2026-11-03') },
-        { name: 'Visualization case study', when: 'Nov 23', open: d('2026-10-26'), from: d('2026-11-23'), to: d('2026-11-24') },
-        { name: 'Demo Day', when: 'Dec 7 & 9', open: d('2026-11-10'), from: d('2026-12-07'), to: d('2026-12-10') }
-      ],
-      facts: [['Booths', 'One per DA321 team, sent from its studio'], ['Audience', 'Class at every session · outside guests at Demo Day'], ['Reactions', 'Comments · audience vote at Demo Day'], ['In this version', 'Team work is not connected yet']],
-      progress: { 'On stage': 'Appraisal open', 'Open': 'Teams are sending work', 'Coming soon': 'Opens for work soon', 'Past': 'All sessions shown' },
-      booths: DA321_TEAMS.map(function(t, i){ return { key: 'da321-t' + (i + 1), label: 'Team ' + (i + 1), name: t, people: [['Team', 'Team ' + (i + 1)]], prog: '', pieces: [] }; }) },
-    { key: 'airshow', name: 'AIRshow', ctx: 'AIR Project · Fall 2026', tone: '#3A2A12', host: 'AIR Project', hosts: ['b3154590ea5dc4b3f5ba57afc42ab6c092a10711fcf3c201ba0989d2c2d9e64d'], exhibitors: [], audience: 'taejae',
-      sessions: [{ name: 'Showcase', when: '[DATE]', open: d('2099-01-01'), from: d('2099-01-01'), to: d('2099-01-02') }],
-      facts: [['What', 'Advanced Independent Research: student teams define their own questions and build their own answers'], ['Booths', 'AIR teams, by open call'], ['Audience', 'Taejae community'], ['Awards', 'Innovative Research and Real-world Impact (faculty committee) · Outstanding Presentation (community vote)']],
-      progress: { 'Coming soon': 'Booths by open call' },
-      booths: [] }
-  ];
-  var STUDIOS = [
-    { group: 'Your studio', meta: 'Your own lectures and projects · private until you send them to a showroom', owner: 'b3154590ea5dc4b3f5ba57afc42ab6c092a10711fcf3c201ba0989d2c2d9e64d', items: [{ who: '곽지영 교수', name: '뇌과학 아카데미 강의', note: 'Sent to 뇌과학 아카데미 특강', imgs: ['img/w1-l1.png', 'img/w1-slides.png', 'img/w2-slides.png'], href: '#s/brain' }] },
-    { group: 'DA321 Data Analytics and Visualization · Fall 2026', meta: '9 team studios', hostOf: 'da321', dbOffering: 54, items: DA321_TEAMS.map(function(t, i){ return { who: 'Team ' + (i + 1), name: t, note: 'Studio not connected yet', imgs: [] }; }) }
-  ];
+  // ── DATA: every showroom and studio comes from the database (ergon_* tables) ──
+  var ROOMS = [], STUDIOS = [];
 
-  // ── DATA FROM THE DATABASE (ergon_* tables). Rooms written above stay until they move there. ──
-  var STATIC_ROOMS = ROOMS.slice(), STATIC_STUDIOS = STUDIOS.slice();
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   function whenOf(a, b){ var x = d(a), y = d(b || a), f = MON[x.getMonth()] + ' ' + x.getDate(); if (!b || a === b) return f; return f + ' – ' + (x.getMonth() === y.getMonth() ? '' : MON[y.getMonth()] + ' ') + y.getDate(); }
   function dayAfter(s){ var x = d(s); x.setDate(x.getDate() + 1); return x; }
@@ -498,8 +456,8 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
       .then(function(r){ if (!r.ok) throw new Error('public showrooms ' + r.status); return r.json(); })
       .then(function(rows){
         var pub = rows.map(function(x){ return roomOf(x.showroom, {}); });
-        ROOMS = pub.concat(STATIC_ROOMS.filter(function(r){ return !pub.some(function(w){ return w.name === r.name && w.ctx === r.ctx; }); }));
-      }).catch(function(ex){ ROOMS = STATIC_ROOMS.slice(); console.warn('Ergon: public showrooms not loaded -', ex && ex.message); });
+        ROOMS = pub;
+      }).catch(function(ex){ ROOMS = []; console.warn('Ergon: public showrooms not loaded -', ex && ex.message); });
   }
   function loadDB(){
     if (!signedIn()) return Promise.resolve();
@@ -515,8 +473,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
       return names.then(function(fp){
         var nm = {}; fp.forEach(function(p){ nm[String(p.email).toLowerCase()] = p.name_en; });
         var dbRooms = rooms.map(function(w){ return roomOf(w, nm); });
-        var offerings = dbRooms.map(function(r){ return r.offeringId; }).filter(Boolean);
-        ROOMS = dbRooms.concat(STATIC_ROOMS.filter(function(r){ return !(r.dbOffering && offerings.indexOf(r.dbOffering) >= 0) && !dbRooms.some(function(w){ return w.name === r.name && w.ctx === r.ctx; }); }));
+        ROOMS = dbRooms;
         // Studios: a course's team studios for its instructor, then the teams I am on
         var me = PROFESSOR.email, groups = {}, order = [];
         studios.forEach(function(s){
@@ -533,8 +490,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
             imgs: (s.ergon_pieces || []).map(function(p){ return p.thumbnail_url; }).filter(Boolean) });
         });
         order.forEach(function(k){ groups[k].meta = plural(groups[k].items.length, 'studio'); });
-        // a written-in group gives way to the database: its course's teams, or your own studio once it is stored
-        STUDIOS = STATIC_STUDIOS.filter(function(g){ return !(g.dbOffering && offerings.indexOf(g.dbOffering) >= 0) && !(g.owner && groups.own); }).concat(order.map(function(k){ return groups[k]; }));
+        STUDIOS = order.map(function(k){ return groups[k]; });
       });
     }).catch(function(ex){ console.warn('Ergon: database not loaded -', ex && ex.message); });
   }
@@ -688,7 +644,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     var tile = function(r, ed){
       if (!ed) return roomTile(r);
       return mine(r) ? itemCard(thumb(r), 'room:' + r.showroomId, { title: r.name, note: r.ctx }, r.name, !!r.hiddenAt)
-        : lockCard(thumb(r), r.db ? 'Only its host can edit this showroom.' : 'This showroom is written into the page, so it can’t be edited here.');
+        : lockCard(thumb(r), 'Only its host can edit this showroom.');
     };
     var roomTile = function(r){
       var c = roomCard(r), aud = AUD[audienceOf(r)] || '';
@@ -725,7 +681,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
     var editable = function(c){ return !!(c.o.studioId && c.o.canEdit); };
     var tile = function(c, ed){
       var o = c.o;
-      if (ed && !editable(c)) return lockCard('<div class="tile">' + mosaic(o.imgs.map(function(src){ return '<img src="' + src + '" alt="">'; })) + '</div>', o.studioId ? 'Only its owner or instructor can edit this studio.' : 'This studio is written into the page, so it can’t be edited here.');
+      if (ed && !editable(c)) return lockCard('<div class="tile">' + mosaic(o.imgs.map(function(src){ return '<img src="' + src + '" alt="">'; })) + '</div>', 'Only its owner or instructor can edit this studio.');
       if (ed && editable(c)) return itemCard('<div class="tile">' + mosaic(o.imgs.map(function(src){ return '<img src="' + src + '" alt="">'; })) + '</div>', 'studio:' + o.studioId, { title: o.name, note: o.summary || '' }, o.name, o.archived);
       var inner = mosaic(o.imgs.map(function(src){ return '<img src="' + src + '" alt="">'; })) +
         '<span class="row"><span>' + esc(o.who) + '</span><span>' + esc(c.g.group === 'Your studio' ? '' : c.g.group) + '</span></span><span class="t">' + esc(o.name) + '</span>';
@@ -1061,7 +1017,7 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
       header('', sbUser ? null : f.room); showWall(false);
       app.innerHTML = gateHTML(f.room); document.title = f.room.name; window.scrollTo(0, 0); return;
     }
-    if (!sbUser && !f) { header(''); app.innerHTML = ''; wallFor(null); showWall(true); return; }
+    if (!sbUser && !f) { header(''); app.innerHTML = ''; wallFor(null); showWall(true); document.title = TAB_TITLE; return; }
     showWall(false);
     if (f && kind === 'p') { header('showrooms', f.room); app.innerHTML = leafHTML(f.room, f.booth, f.piece, f.k); document.title = f.room.name; }
     else if (f && kind === 'b') {

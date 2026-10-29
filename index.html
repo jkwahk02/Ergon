@@ -323,6 +323,20 @@ dialog.tm .tm-load,dialog.tm .tm-done{margin:0;padding:24px;color:var(--muted)}
   header nav::-webkit-scrollbar{display:none}
   header nav a{font-size:16px;padding:0 12px;flex:none}
 }
+
+/* header as on Arete: taller bar, menu on the right, 14 px text; an item grows a little on hover and when current */
+@media (min-width:761px){
+  header.top .wrap{height:auto;padding-top:22px;padding-bottom:22px;flex-wrap:wrap;gap:16px 32px;}
+  .nav-logo{margin-right:0;}
+  header nav{margin-left:auto;height:auto;gap:12px 26px;flex-wrap:wrap;overflow:visible;}
+  header nav a{height:auto;padding:0 0 4px;font-size:14px;color:var(--fg);border-bottom:1px solid transparent;background:none;}
+  header nav a[aria-current="page"]{border-bottom-color:#B45309;}
+  .nav-right{margin-left:0;}
+  .nav-name{font-size:14px;}
+}
+header nav a{transition:transform .15s ease,color .15s ease;transform-origin:center bottom;}
+header nav a:hover{transform:scale(1.08);color:#B45309;}
+header nav a[aria-current="page"]{transform:scale(1.08);color:#B45309;}
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&display=swap">
 </head>

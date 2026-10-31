@@ -151,6 +151,9 @@ h2{margin:0;font-weight:500;font-size:15px}
 .sess div{padding:12px 8px 0 0;margin-top:-1px;border-top:2px solid transparent;font-size:14px;color:var(--tone-soft)}
 .sess div.on{border-top-color:#FFFFFF;color:#FFFFFF;font-weight:600}
 .sess small{display:block;font-weight:400;font-size:12px;opacity:.85}
+.showbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;margin-top:28px;padding:10px 0;border-top:1px solid rgba(255,255,255,.28);color:#FFFFFF;font-size:14px}
+.showbar span{flex:1;min-width:220px;opacity:.9}
+.showbar .hadd{color:#FFFFFF}
 .sessbar{display:flex;align-items:flex-start;gap:16px;margin-top:36px}
 .sessbar .sess{flex:1;margin-top:0}
 .sessbar .hadd,.sessedit .hadd{color:#FFFFFF;margin-top:8px}
@@ -443,6 +446,13 @@ header nav a[aria-current="page"]{transform:scale(1.08);color:#B45309;}
     return { key: 'p' + p.piece_id, pieceId: p.piece_id, noteText: p.note || '', type: KIND[p.kind] || 'link', kind: p.kind, name: p.title, part: p.part || String(p.kind).replace('_', ' '),
       src: p.note || String(p.provider).replace('_', ' '), img: p.thumbnail_url || thumbOf(p.provider, p.file_id), id: p.file_id || '', url: p.url, provider: p.provider };
   }
+  // The host sets Prep, Live or Past (ergon_showroom_status_v1.sql); Live counts as Past once its On view dates are over
+  function todayISO(){ var t = new Date(Date.now() + 9 * 3600000); return t.toISOString().slice(0, 10); }   // Korea time
+  function showState(w){
+    var st = { prep: 'Prep', live: 'Live', past: 'Past' }[w.status];
+    if (!st) return null;   // before the SQL runs: the session dates decide
+    return st === 'Live' && w.on_view_to && w.on_view_to < todayISO() ? 'Past' : st;
+  }
   function roomOf(w, names){
     var hosts = (w.ergon_showroom_hosts || []).map(function(h){ return h.email; }), amHost = !!PROFESSOR && hosts.indexOf(PROFESSOR.email) >= 0;
     var ss = (w.ergon_sessions || []).filter(function(s){ return !s.is_draft; })
@@ -458,6 +468,7 @@ header nav a[aria-current="page"]{transform:scale(1.08);color:#B45309;}
     var withWork = booths.filter(function(b){ return b.pieces.length; }).length;
     return { key: 's' + w.showroom_id, showroomId: w.showroom_id, db: true, hiddenAt: w.hidden_at || null, offeringId: w.offering_id, name: w.title, ctx: w.subtitle || '', tone: w.tone || '#2F2F2F',
       host: w.host_name || hosts.map(function(e){ return names[e] || e.split('@')[0]; }).join(', '), hostEmails: hosts, audience: w.audience,
+      status: showState(w), show: { due: w.prep_due || '', from: w.on_view_from || '', to: w.on_view_to || '' },
       sessions: ss.length ? ss.map(function(s){ return { id: s.session_id, name: s.name, raw: { from: s.stage_from, to: s.stage_to, open: s.opens_on || '', lock: s.locks_on || '' }, when: whenOf(s.stage_from, s.stage_to), open: d(s.opens_on || s.stage_from), from: d(s.stage_from), to: dayAfter(s.stage_to) }; })
                           : [{ name: 'Showcase', when: 'Date to be set', open: d('2999-01-01'), from: d('2999-01-01'), to: d('2999-01-02') }],   // no session yet: Coming soon
       facts: Array.isArray(w.facts) ? w.facts : [],
@@ -476,7 +487,7 @@ header nav a[aria-current="page"]{transform:scale(1.08);color:#B45309;}
   function loadDB(){
     if (!signedIn()) return Promise.resolve();
     return Promise.all([
-      rest('ergon_showrooms?select=showroom_id,title,subtitle,tone,offering_id,audience,facts,hidden_at,ergon_showroom_hosts(email),' +
+      rest('ergon_showrooms?select=showroom_id,title,subtitle,tone,offering_id,audience,facts,hidden_at,status,prep_due,on_view_from,on_view_to,ergon_showroom_hosts(email),' +
         'ergon_sessions(session_id,name,sort_order,is_draft,opens_on,locks_on,stage_from,stage_to),' +
         'ergon_booths(booth_id,label,title,summary,sort_order,hidden,from_on,to_on,studio_id,ergon_booth_exhibitors(email),ergon_booth_entries(entry_id,withdrawn_at,ergon_pieces(piece_id,kind,title,part,note,url,provider,file_id,thumbnail_url)))&order=showroom_id'),
       rest('ergon_studios?select=studio_id,title,summary,offering_id,team_label,created_by,archived_at,ergon_studio_members(email),ergon_pieces(kind,thumbnail_url)&order=studio_id')
@@ -525,9 +536,14 @@ header nav a[aria-current="page"]{transform:scale(1.08);color:#B45309;}
   }
   // lists run Live, then Prep, then Past; within each, the showroom that started most recently comes first
   var STATUS_ORDER = { Live: 0, Prep: 1, Past: 2 };
-  function startOf(r){ return r.sessions.reduce(function(m, x){ return x.from < m ? x.from : m; }, r.sessions[0].from); }
+  function startOf(r){ if (r.show && r.show.from) return d(r.show.from); return r.sessions.reduce(function(m, x){ return x.from < m ? x.from : m; }, r.sessions[0].from); }
   function byStatus(a, b){ return STATUS_ORDER[statusOf(a)] - STATUS_ORDER[statusOf(b)] || startOf(b) - startOf(a); }
   function lineOf(r){
+    var sh = r.show || {}, st0 = r.status;
+    if (st0 === 'Prep' && sh.due) return 'Send by ' + whenOf(sh.due) + (sh.from ? ' · shows ' + whenOf(sh.from) : '');
+    if (st0 === 'Prep' && sh.from) return 'Shows ' + whenOf(sh.from, sh.to || sh.from);
+    if (st0 === 'Live' && sh.to) return 'Showing until ' + whenOf(sh.to);
+    if (st0 === 'Past' && sh.from) return 'Shown ' + whenOf(sh.from, sh.to || sh.from);
     var s = lead(r), st = stateOf(s), many = r.sessions.length > 1 ? ' · ' + s.name : '';
     if (!s.when || s.when === 'Date to be set') return 'Dates to be set';
     return (st === 'On stage' ? 'Showing ' : st === 'Open' ? 'Send now · shows ' : st === 'Past' ? 'Shown ' : 'Shows ') + s.when + many;
@@ -754,13 +770,14 @@ header nav a[aria-current="page"]{transform:scale(1.08);color:#B45309;}
       '<div class="cap"><span><b>' + esc(it.p.name) + '</b> · ' + esc(it.sub) + '</span><span>' + (k + 1) + ' / ' + s.length + '</span></div>';
   }
   function page(cfg){
-    var h = '<section class="poster gut" style="--tone:' + cfg.tone + '" aria-label="' + esc(cfg.name) + '"><div class="wrap">' + crumb(cfg.path, cfg.sib, cfg.invite && roleIn(find('s', cfg.invite).room) === 'host' ? (find('s', cfg.invite).room.offeringId ? '<button type="button" class="ibtn" data-teams="' + cfg.invite + '">Teams and booths</button>' : '') + '<button type="button" class="ibtn" data-invite="' + cfg.invite + '">Invite</button>' : '') +
+    var h = '<section class="poster gut" style="--tone:' + cfg.tone + '" aria-label="' + esc(cfg.name) + '"><div class="wrap">' + crumb(cfg.path, cfg.sib, cfg.invite && roleIn(find('s', cfg.invite).room) === 'host' ? (find('s', cfg.invite).room.offeringId ? '<button type="button" class="ibtn" data-teams="' + cfg.invite + '">Teams and booths</button>' : '') + (statusOf(find('s', cfg.invite).room) === 'Live' ? '<button type="button" class="ibtn" data-invite="' + cfg.invite + '">Invite</button>' : '') : '') +
       '<div class="pgrid"><div class="id"><div class="state"><span class="chip" style="background:' + (statusBg[cfg.state] || chipBg(cfg.state)) + '">' + cfg.state + '</span><span>' + esc(cfg.when) + '</span></div>' +
       '<div class="ctx">' + esc(cfg.ctx) + '</div><h1>' + esc(cfg.name) + '</h1>' + (cfg.prog ? '<div class="prog">' + esc(cfg.prog) + '</div>' : '') +
       '<dl class="idl">' + cfg.dl.map(function(x){ return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd>'; }).join('') + '</dl>' +
       '</div><div class="stage" id="stage">' + stageHTML(cfg) + '</div></div>';
     var ssc = cfg.sessRoom ? 's:' + cfg.sessRoom.key + ':sess' : null;
     var sessRow = cfg.sessions ? '<div class="sess" role="group" aria-label="Sessions">' + cfg.sessions.map(function(s){ var st = stateOf(s); return '<div class="' + (s === cfg.lead ? 'on' : '') + '">' + esc(s.name) + '<small>' + esc(s.when) + (st === 'On stage' ? ' · showing' : st === 'Past' ? ' · shown' : '') + '</small></div>'; }).join('') + '</div>' : '';
+    if (cfg.sessRoom && cfg.sessRoom.status) h += showBar(cfg.sessRoom);
     if (ssc && editing.scope === ssc) h += sessEditHTML(cfg.sessRoom, ssc);
     else if (ssc) h += '<div class="sessbar">' + sessRow + editBtn(ssc) + '</div>';
     else if (cfg.sessions && cfg.sessions.length > 1) h += sessRow;
@@ -820,6 +837,32 @@ header nav a[aria-current="page"]{transform:scale(1.08);color:#B45309;}
   // or hides a booth, a showroom or a studio (Show again brings it back). The + adds one with a title and a note.
   // On a booth, Edit turns every piece into its form; what is typed is kept in drafts and saved all at once on Done.
   var editing = { scope: null, adding: false, drafts: {} };
+  // The host moves a showroom: Open Show (Prep to Live), Back to Prep, Close Show (Live to Past), Reopen Show
+  function showBar(r){
+    var st = statusOf(r), b = function(to, label){ return '<button type="button" class="hadd" data-show="' + r.key + ':' + to + '">' + label + '</button>'; };
+    var say = { Prep: 'Prep. Only you and the exhibitors can see this showroom.', Live: 'Live. Invited people can see this showroom.', Past: 'Past. The show is over, and invited people can still look back.' }[st];
+    return '<div class="showbar"><span>' + say + '</span>' + (st === 'Prep' ? b('live', 'Open Show') : st === 'Live' ? b('prep', 'Back to Prep') + b('past', 'Close Show') : b('live', 'Reopen Show')) + '</div>';
+  }
+  var SHOWASK = { live: 'Open the show? Invited people will be able to see it.', prep: 'Go back to Prep? Invited people will not see it until you open the show again.', past: 'Close the show? It moves to Past.' };
+  document.addEventListener('click', function(e){
+    var t = e.target.closest && e.target.closest('[data-show]'); if (!t) return;
+    var v = t.getAttribute('data-show').split(':'), r = find('s', v[0]).room;
+    if (!confirm(statusOf(r) === 'Past' && v[1] === 'live' ? 'Reopen the show? Invited people will be able to see it again.' : SHOWASK[v[1]])) return;
+    t.disabled = true;
+    rpc('ergon_set_show', { p_showroom_id: r.showroomId, p_status: v[1] })
+      .then(function(){ toast({ live: 'The show is open', prep: 'Back to Prep', past: 'The show is closed' }[v[1]]); return loadDB(); }).then(rerender)
+      .catch(function(ex){ toast(ex.message); t.disabled = false; });
+  });
+  // Show dates in Edit: Prep due, and the days the show is on view
+  function showForm(r){
+    var sh = r.show || {}, key = 'show:' + r.showroomId, was = { due: sh.due || '', from: sh.from || '', to: sh.to || '' }, v = editing.drafts[key] || was;
+    var date = function(n, val){ return '<input name="' + n + '" type="date" value="' + esc(val || '') + '">'; };
+    return '<div class="pedit"><form class="addcard bulk" data-add-kind="show-edit" data-target="' + key + '" data-was="' + esc(JSON.stringify(was)) + '" novalidate>' +
+      '<label>Prep due' + date('due', v.due) + '</label>' +
+      '<label>On view<span class="two">' + date('from', v.from) + date('to', v.to) + '</span></label>' +
+      '<p class="hint">Exhibitors send their work by the Prep due date. After the last day on view, the show moves to Past by itself.</p>' +
+      '<p class="am" role="status" aria-live="polite"></p></form></div>';
+  }
   // Sessions in Edit: name, show dates and (optional) the days work can be sent
   function sessForm(kind, target, v, was){
     var bulk = kind === 'sess-edit', date = function(n, val){ return '<input name="' + n + '" type="date" value="' + esc(val || '') + '">'; };
@@ -838,7 +881,8 @@ header nav a[aria-current="page"]{transform:scale(1.08);color:#B45309;}
         '<button type="button" class="ex" data-x="' + key + ':1" data-ask="Delete the “' + esc(x.name) + '” session?" aria-label="Delete ' + esc(x.name) + '">×</button></div>';
     });
     cards.push(editing.adding ? sessForm('sess', r.key, {}) : '<button type="button" class="addtile pt" data-add-open="1"><span aria-hidden="true">+</span><small>Add a session</small></button>');
-    return '<div class="sessedit"><div class="sh"><span>Sessions</span>' + editBtn(sc) + '</div><div class="sg">' + cards.join('') + '</div></div>';
+    if (r.status) cards.unshift(showForm(r));
+    return '<div class="sessedit"><div class="sh"><span>Show and sessions</span>' + editBtn(sc) + '</div><div class="sg">' + cards.join('') + '</div></div>';
   }
   function sessValues(f){ return { title: f.title.value.trim(), from: f.from.value, to: f.to.value, open: f.open.value, lock: f.lock.value }; }
   function sessProblem(v){
@@ -891,6 +935,15 @@ header nav a[aria-current="page"]{transform:scale(1.08);color:#B45309;}
     var forms = Array.prototype.slice.call(app.querySelectorAll('.addcard.bulk')), calls = [], bad = null;
     forms.forEach(function(f){
       var o = JSON.parse(f.getAttribute('data-was')), msg = f.querySelector('.am'), target = f.getAttribute('data-target');
+      if (f.getAttribute('data-add-kind') === 'show-edit') {
+        var dv = { due: f.due.value, from: f.from.value, to: f.to.value }; msg.textContent = '';
+        if (JSON.stringify(dv) === JSON.stringify(o)) return;
+        if (dv.from && dv.to && dv.to < dv.from) { msg.textContent = 'The show ends before it starts.'; bad = bad || f.from; return; }
+        if (dv.due && dv.from && dv.due > dv.from) { msg.textContent = 'The Prep due date must be on or before the first day on view.'; bad = bad || f.due; return; }
+        var da = { p_showroom_id: +target.split(':')[1], p_prep_due: dv.due || null, p_from: dv.from || null, p_to: dv.to || null };
+        calls.push(function(){ return rpc('ergon_set_show_dates', da); });
+        return;
+      }
       if (f.getAttribute('data-add-kind') === 'sess-edit') {
         var sv = sessValues(f), why = sessProblem(sv); msg.textContent = '';
         if (JSON.stringify(sv) === JSON.stringify(o)) return;

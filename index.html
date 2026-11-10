@@ -97,6 +97,14 @@ h2{margin:0;font-weight:500;font-size:15px}
 .card h1{margin-top:8px;font-size:clamp(28px,3.4vw,48px)}
 .card .meta{margin-top:14px;opacity:.85}
 .card.intro .cs p{margin:0;font-size:16px;line-height:1.6;opacity:.92}
+.ivis{display:grid;gap:8px}
+.ivis img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;box-shadow:0 0 0 1px rgba(255,255,255,.25)}
+.ivis.g2{grid-template-columns:1fr 1fr}
+.ivis.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.ivis figure{margin:0}
+.ivis figcaption,.ivis.steps small{display:block;margin-top:6px;font-size:12px;opacity:.85}
+.ivis.steps{grid-template-columns:repeat(3,minmax(0,1fr));padding-top:4px}
+.ivis.steps .chip{color:#3A2A12}
 .card .enter{margin-top:auto;align-self:flex-start;padding:24px 0 3px;border-bottom:1px solid #FFFFFF;text-decoration:none;font-size:15px}
 .card.c0 .ci>*{animation:rise 600ms cubic-bezier(.22,.8,.2,1) both}
 .card.c0 .ci>*:nth-child(2){animation-delay:60ms}.card.c0 .ci>*:nth-child(3){animation-delay:110ms}.card.c0 .ci>*:nth-child(4){animation-delay:160ms}
@@ -620,6 +628,18 @@ header nav a[aria-current="page"]{transform:scale(1.08);color:#B45309;}
   // ── HOME ──
   var deckIdx = 0, rot = 0, current = null;
   function roomCard(r){ var s = lead(r), st = stateOf(s); return { r: r, st: st, status: statusOf(r), when: lineOf(r) }; }
+  // When nothing is Live, the carousel turns through three short introductions instead
+  var INTRO = [
+    { tone: '#B45309', ctx: 'Ergon Showrooms', h: 'Where Taejae shows its work', p: 'Classes, programs and lecture series each open a showroom for what they make. No showroom is live right now.',
+      vis: '<div class="ivis g2"><img src="img/w1-slides.png" alt=""><img src="img/w1-l1.png" alt=""><img src="img/w1-l3.png" alt=""><img src="img/w2-slides.png" alt=""></div>' },
+    { tone: '#92400E', ctx: 'Booths and pieces', h: 'One booth for each team', p: 'Each booth holds its team\u2019s pieces, such as slides, videos, reports and demos, and they open right in the showroom.',
+      vis: '<div class="ivis g3"><figure><img src="img/w1-l1.png" alt=""><figcaption>Video</figcaption></figure><figure><img src="img/w1-l2.png" alt=""><figcaption>Video</figcaption></figure><figure><img src="img/w1-slides.png" alt=""><figcaption>Slides</figcaption></figure></div>' },
+    { tone: '#78350F', ctx: 'Prep, Live and Past', h: 'A show opens when it is ready', p: 'The host sets up in Prep while teams send their work, then opens the show and invites the audience.',
+      vis: '<div class="ivis steps"><div><span class="chip" style="background:rgba(255,255,255,.8)">Prep</span><small>Teams send their work</small></div>' +
+        '<div><span class="chip" style="background:#F2C14E">Live</span><small>The audience comes in</small></div>' +
+        '<div><span class="chip" style="background:rgba(255,255,255,.5)">Past</span><small>Kept to look back on</small></div></div>' }
+  ];
+  function deckSize(){ return liveRooms().length || INTRO.length; }
   function liveRooms(){ return ROOMS.filter(function(r){ return !r.hiddenAt && statusOf(r) === 'Live'; }).sort(byStatus).map(roomCard); }
   function cardStage(c){
     var r = c.r, pcs = allPieces(r), pc = pcs.length ? pcs[rot % pcs.length] : null;
@@ -643,13 +663,15 @@ header nav a[aria-current="page"]{transform:scale(1.08);color:#B45309;}
         '<div class="ctx">' + esc(r.ctx) + '</div><h1>' + esc(r.name) + '</h1><a class="enter" href="#s/' + r.key + '" tabindex="-1">Enter</a></div>' +
         '<div class="cs" data-stage="' + k + '">' + cardStage(c) + '</div></div>';
     });
-    // nothing Live: a short introduction to showrooms takes the stage
-    if (!n) h += '<div class="card c0 intro" data-k="0" style="background:#B45309">' +
-      '<div class="ci"><div class="ctx" style="margin-top:0">Ergon Showrooms</div><h1>Where Taejae shows its work</h1>' +
-      '<a class="enter" href="#showrooms">See all showrooms</a></div>' +
-      '<div class="cs"><p>Classes, programs and lecture series show their work here, one booth per team or speaker. No showroom is live right now.</p></div></div>';
-    if (n > 1) h += '<button type="button" class="peek l" data-step="-1"></button><button type="button" class="peek r" data-step="1"></button>';
-    h += '</section><div class="dots" role="group" aria-label="Choose a showroom">' + live.map(function(c, k){ return '<button type="button" data-deck="' + k + '" aria-label="Show ' + esc(c.r.name) + '"><span><i></i></span></button>'; }).join('') + '</div>';
+    // nothing Live: the introductions take the stage
+    if (!n) INTRO.forEach(function(c, k){
+      h += '<div class="card intro" data-intro="1" data-k="' + k + '" style="background:' + c.tone + '">' +
+        '<div class="ci"><div class="ctx" style="margin-top:0">' + c.ctx + '</div><h1>' + c.h + '</h1><a class="enter" href="#showrooms" tabindex="-1">See all showrooms</a></div>' +
+        '<div class="cs"><p>' + c.p + '</p>' + c.vis + '</div></div>';
+    });
+    var size = n || INTRO.length;
+    if (size > 1) h += '<button type="button" class="peek l" data-step="-1"></button><button type="button" class="peek r" data-step="1"></button>';
+    h += '</section><div class="dots" role="group" aria-label="Choose a showroom">' + (n ? live.map(function(c){ return c.r.name; }) : INTRO.map(function(c){ return c.ctx; })).map(function(name, k){ return '<button type="button" data-deck="' + k + '" aria-label="Show ' + esc(name) + '"><span><i></i></span></button>'; }).join('') + '</div>';
     // Home shows what is happening now: Live and Prep showrooms (Past ones stay on the Showrooms page)
     var shown = ROOMS.filter(function(r){ return !r.hiddenAt; }).sort(byStatus);
     var homeTile = function(r){ var c = roomCard(r); return '<a class="rtile" href="#s/' + r.key + '" style="background:' + r.tone + '"><span class="state" style="color:rgba(255,255,255,.85)"><span class="chip" style="background:' + statusBg[c.status] + '">' + c.status + '</span><span>' + esc(c.when) + '</span></span><span class="rs">' + esc(r.ctx) + '</span><span class="rn">' + esc(r.name) + '</span></a>'; };
@@ -1138,14 +1160,12 @@ header nav a[aria-current="page"]{transform:scale(1.08);color:#B45309;}
   var hoverTimer = null, autoTimer = null, hovering = false;
   function placeDeck(){
     var deck = $('deck'); if (!deck) return;
-    var live = liveRooms(), n = live.length;
-    if (!n) return;   // the introduction card stays in place
-    var i = ((deckIdx % n) + n) % n;
+    var n = deckSize(), i = ((deckIdx % n) + n) % n;
     deckIdx = i;
     Array.prototype.forEach.call(deck.querySelectorAll('.card'), function(el){
       var k = +el.getAttribute('data-k'), off = k - i; if (off > n / 2) off -= n; if (off < -n / 2) off += n;
       if (n === 2 && off === 1 && i === 1) off = -1;
-      el.className = 'card ' + (off === 0 ? 'c0' : off === -1 ? 'cl' : off === 1 ? 'cr' : off < 0 ? 'cfl' : 'cfr');
+      el.className = 'card ' + (el.hasAttribute('data-intro') ? 'intro ' : '') + (off === 0 ? 'c0' : off === -1 ? 'cl' : off === 1 ? 'cr' : off < 0 ? 'cfl' : 'cfr');
       el.setAttribute('aria-hidden', off === 0 ? 'false' : 'true');
       var en = el.querySelector('.enter'); if (en) en.tabIndex = off === 0 ? 0 : -1;
     });
@@ -1165,7 +1185,7 @@ header nav a[aria-current="page"]{transform:scale(1.08);color:#B45309;}
   function goDeck(k){ deckIdx = k; rot = 0; placeDeck(); var c = liveRooms()[deckIdx], st = document.querySelector('[data-stage="' + deckIdx + '"]'); if (st && c) st.innerHTML = cardStage(c); }
   function armAuto(){
     clearTimeout(autoTimer);
-    var deck = $('deck'); if (!deck || reduce || liveRooms().length < 2) return;
+    var deck = $('deck'); if (!deck || reduce || deckSize() < 2) return;
     var paused = hovering || deck.contains(document.activeElement);
     deck.classList.toggle('paused', paused);
     if (!paused) autoTimer = setTimeout(function(){ goDeck(deckIdx + 1); }, AUTO);

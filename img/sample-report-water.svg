@@ -1,0 +1,11 @@
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 360' width='640' height='360'><rect width='640' height='360' fill='#E2E8F0'/>
+<rect x='30' y='20' width='580' height='340' fill='#FFFFFF'/>
+<text x='60' y='70' font-family='Inter, Segoe UI, Helvetica, Arial, sans-serif' font-size='13' fill='#64748B'>Final report</text>
+<text x='60' y='104' font-family='Inter, Segoe UI, Helvetica, Arial, sans-serif' font-size='26' font-weight='600' fill='#0F172A'>Clean Water on Campus</text>
+<text x='60' y='130' font-family='Inter, Segoe UI, Helvetica, Arial, sans-serif' font-size='14' fill='#475569'>A survey of refill stations and use</text>
+<rect x='60' y='150' width='380' height='8' rx='4' fill='#CBD5E1'/><rect x='60' y='166' width='400' height='8' rx='4' fill='#CBD5E1'/><rect x='60' y='182' width='360' height='8' rx='4' fill='#CBD5E1'/><rect x='60' y='198' width='390' height='8' rx='4' fill='#CBD5E1'/><rect x='60' y='250' width='380' height='8' rx='4' fill='#CBD5E1'/><rect x='60' y='266' width='340' height='8' rx='4' fill='#CBD5E1'/><rect x='60' y='282' width='400' height='8' rx='4' fill='#CBD5E1'/><rect x='60' y='298' width='300' height='8' rx='4' fill='#CBD5E1'/>
+<text x='60' y='238' font-family='Inter, Segoe UI, Helvetica, Arial, sans-serif' font-size='14' font-weight='600' fill='#0F172A'>1. Findings</text>
+<rect x='480' y='150' width='100' height='100' rx='50' fill='#DBEAFE'/>
+<path d='M530 150 A50 50 0 1 1 489 222 L530 200 Z' fill='#3B82F6'/>
+<text x='493' y='280' font-family='Inter, Segoe UI, Helvetica, Arial, sans-serif' font-size='12' fill='#475569'>62% refill daily</text>
+</svg>

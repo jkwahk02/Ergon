@@ -1,0 +1,12 @@
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 360' width='640' height='360'><rect width='640' height='360' fill='#F8FAFC'/>
+<text x='40' y='52' font-family='Inter, Segoe UI, Helvetica, Arial, sans-serif' font-size='22' font-weight='600' fill='#134E4A'>Bike-Share Demand by Hour</text>
+<text x='40' y='76' font-family='Inter, Segoe UI, Helvetica, Arial, sans-serif' font-size='13' fill='#5F7A78'>Weekday trips, September</text>
+<rect x='470' y='34' width='130' height='50' rx='6' fill='#CCFBF1'/>
+<text x='484' y='56' font-family='Inter, Segoe UI, Helvetica, Arial, sans-serif' font-size='12' fill='#115E59'>Peak hour</text>
+<text x='484' y='76' font-family='Inter, Segoe UI, Helvetica, Arial, sans-serif' font-size='18' font-weight='600' fill='#115E59'>8 a.m.</text>
+<line x1='60' y1='300' x2='490' y2='300' stroke='#99A8A6'/>
+<rect x='70' y='240' width='22' height='60' fill='#0D9488'/><rect x='104' y='210' width='22' height='90' fill='#0D9488'/><rect x='138' y='160' width='22' height='140' fill='#0D9488'/><rect x='172' y='120' width='22' height='180' fill='#0D9488'/><rect x='206' y='140' width='22' height='160' fill='#0D9488'/><rect x='240' y='180' width='22' height='120' fill='#0D9488'/><rect x='274' y='200' width='22' height='100' fill='#0D9488'/><rect x='308' y='150' width='22' height='150' fill='#0D9488'/><rect x='342' y='110' width='22' height='190' fill='#0D9488'/><rect x='376' y='130' width='22' height='170' fill='#0D9488'/><rect x='410' y='190' width='22' height='110' fill='#0D9488'/><rect x='444' y='230' width='22' height='70' fill='#0D9488'/>
+<polyline points='81,250 115,222 149,178 183,140 217,152 251,190 285,206 319,160 353,120 387,138 421,198 455,236' fill='none' stroke='#F97316' stroke-width='3'/>
+<rect x='520' y='120' width='80' height='10' rx='5' fill='#0D9488'/><text x='520' y='148' font-family='Inter, Segoe UI, Helvetica, Arial, sans-serif' font-size='12' fill='#5F7A78'>Trips</text>
+<rect x='520' y='170' width='80' height='4' fill='#F97316'/><text x='520' y='192' font-family='Inter, Segoe UI, Helvetica, Arial, sans-serif' font-size='12' fill='#5F7A78'>Forecast</text>
+</svg>

@@ -1,0 +1,10 @@
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 360' width='640' height='360'><rect width='640' height='360' fill='#2E1065'/>
+<rect x='160' y='24' width='320' height='312' rx='18' fill='#FFFFFF'/>
+<rect x='160' y='24' width='320' height='56' rx='18' fill='#7C3AED'/><rect x='160' y='62' width='320' height='18' fill='#7C3AED'/>
+<text x='184' y='60' font-family='Inter, Segoe UI, Helvetica, Arial, sans-serif' font-size='18' font-weight='600' fill='#FFFFFF'>StudyBuddy</text>
+<rect x='184' y='100' width='180' height='34' rx='12' fill='#EDE9FE'/><text x='196' y='122' font-family='Inter, Segoe UI, Helvetica, Arial, sans-serif' font-size='13' fill='#4C1D95'>When is the quiz due?</text>
+<rect x='276' y='148' width='180' height='50' rx='12' fill='#7C3AED'/><text x='288' y='170' font-family='Inter, Segoe UI, Helvetica, Arial, sans-serif' font-size='13' fill='#FFFFFF'>Friday at 6 p.m.</text><text x='288' y='188' font-family='Inter, Segoe UI, Helvetica, Arial, sans-serif' font-size='13' fill='#FFFFFF'>Want a reminder?</text>
+<rect x='184' y='212' width='120' height='34' rx='12' fill='#EDE9FE'/><text x='196' y='234' font-family='Inter, Segoe UI, Helvetica, Arial, sans-serif' font-size='13' fill='#4C1D95'>Yes, please</text>
+<rect x='184' y='286' width='272' height='32' rx='16' fill='#F1F5F9'/><text x='200' y='307' font-family='Inter, Segoe UI, Helvetica, Arial, sans-serif' font-size='12' fill='#94A3B8'>Ask something</text>
+<text x='24' y='336' font-family='Inter, Segoe UI, Helvetica, Arial, sans-serif' font-size='13' fill='#C4B5FD'>Live demo</text>
+</svg>
